@@ -1,0 +1,217 @@
+// ══════════════════════════════════════════════
+// GHOSN — Shared JavaScript (all pages)
+// ══════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  initNav();
+  initGlobalBirds();
+  initScrollReveal();
+  initFooterCanvas();
+});
+
+// ── Sign Out ──────────────────────────────────
+function signOut() {
+  // TODO: POST /api/auth/logout
+  window.location.href = 'login.html';
+}
+
+// ── Nav ───────────────────────────────────────
+function initNav() {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('solid', window.scrollY > 55);
+  }, { passive: true });
+}
+
+function toggleNav() {
+  const links = document.getElementById('nav-links');
+  if (links) links.classList.toggle('open');
+}
+
+// ── Global Birds ──────────────────────────────
+// 28 birds across full page height, scroll-aware
+function initGlobalBirds() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'birds-canvas';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const birds = Array.from({ length: 28 }, (_, i) => ({
+    x:          Math.random() * window.innerWidth,
+    bandFrac:   Math.random(),
+    vy:         (Math.random() - .5) * .09,
+    vx:         (i % 2 === 0 ? 1 : -1) * (.42 + Math.random() * .72),
+    wing:       Math.random() * Math.PI * 2,
+    size:       7 + Math.random() * 17,
+    drift:      Math.random() * 46 - 23,
+    alpha:      .38 + Math.random() * .32,
+  }));
+
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+  function animate() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    birds.forEach(b => {
+      const pageH   = Math.max(document.body.scrollHeight, 1200);
+      const screenY = b.bandFrac * pageH - scrollY + b.drift;
+
+      b.x    += b.vx;
+      b.wing += .088 + b.size * .002;
+      b.drift += b.vy;
+      if (b.drift >  44) b.vy = -Math.abs(b.vy);
+      if (b.drift < -44) b.vy =  Math.abs(b.vy);
+      if (b.x >  W + 100) b.x = -100;
+      if (b.x < -100)     b.x =  W + 100;
+      if (screenY < -90 || screenY > H + 90) return;
+
+      const wf = Math.sin(b.wing) * b.size * .72;
+      ctx.save();
+      ctx.translate(b.x, screenY);
+      if (b.vx < 0) ctx.scale(-1, 1);
+      ctx.strokeStyle = `rgba(14,44,20,${b.alpha})`;
+      ctx.lineWidth   = 1.6 + b.size * .04;
+      ctx.lineCap     = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(-b.size * .62, -wf, -b.size * 1.2, -wf * .32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo( b.size * .62, -wf,  b.size * 1.2, -wf * .32); ctx.stroke();
+      ctx.fillStyle = `rgba(14,44,20,${b.alpha * .65})`;
+      ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ── Scroll Reveal ─────────────────────────────
+function initScrollReveal() {
+  const sel = '.reveal,.reveal-l,.reveal-r,.reveal-u,.step,.joinus-card,.quote-card';
+  const els = document.querySelectorAll(sel);
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: .10, rootMargin: '0px 0px -36px 0px' });
+  els.forEach(el => obs.observe(el));
+  document.querySelectorAll('.step').forEach((s, i) => s.style.transitionDelay = `${i * .12}s`);
+  document.querySelectorAll('.joinus-card').forEach((c, i) => c.style.transitionDelay = `${i * .14}s`);
+}
+
+// ── Footer Sky Canvas ─────────────────────────
+// Stars + moon + silhouette palm
+function initFooterCanvas() {
+  const canvas = document.getElementById('footer-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let fr = 0;
+
+  function resize() {
+    const r = canvas.parentElement.getBoundingClientRect();
+    canvas.width  = r.width  || 800;
+    canvas.height = r.height || 110;
+  }
+  resize();
+
+  const W = () => canvas.width, H = () => canvas.height;
+
+  // Stars
+  const stars = Array.from({ length: 55 }, () => ({
+    x: Math.random(), y: Math.random() * .75,
+    r: Math.random() * 1.6 + .3,
+    op: Math.random() * .55 + .15,
+    twinkleOffset: Math.random() * Math.PI * 2,
+  }));
+
+  function animate() {
+    fr++;
+    const w = W(), h = H();
+    ctx.clearRect(0, 0, w, h);
+
+    // Dark sky gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#060f06');
+    sky.addColorStop(1, '#0a1a0a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // Stars with gentle twinkle
+    stars.forEach(s => {
+      const twinkle = s.op + Math.sin(fr * .028 + s.twinkleOffset) * .12;
+      ctx.fillStyle = `rgba(200,240,175,${twinkle})`;
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Moon — soft crescent
+    const mx = w * .85, my = h * .28, mr = h * .22;
+    const moonGlow = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.5);
+    moonGlow.addColorStop(0, 'rgba(220,255,200,.18)');
+    moonGlow.addColorStop(1, 'rgba(220,255,200,0)');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath(); ctx.arc(mx, my, mr * 2.5, 0, Math.PI * 2); ctx.fill();
+
+    // Moon disc
+    ctx.fillStyle = 'rgba(228,250,205,.92)';
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+    // Crescent shadow
+    ctx.fillStyle = '#060f06';
+    ctx.beginPath(); ctx.arc(mx + mr * .38, my - mr * .08, mr * .88, 0, Math.PI * 2); ctx.fill();
+
+    // Palm silhouette — left of moon
+    const px = w * .72, py = h;
+    const ph = h * .88;
+    const ptx = px - ph * .12, pty = py - ph;
+
+    ctx.strokeStyle = 'rgba(168,216,120,.55)';
+    ctx.lineWidth = Math.max(2, ph * .044);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.quadraticCurveTo(px - ph * .06, py - ph * .5, ptx, pty);
+    ctx.stroke();
+
+    // Fronds
+    const frondAngles = [-.7, -.35, 0, .35, .7, 1.0, -.05];
+    frondAngles.forEach((angle, fi) => {
+      const sw = Math.sin(fr * .018 + fi * .6) * .06;
+      const fa  = angle + sw;
+      const fl  = ph * .38;
+      ctx.strokeStyle = `rgba(130,200,100,${.38 + fi * .04})`;
+      ctx.lineWidth   = Math.max(1, ph * .016);
+      ctx.beginPath();
+      ctx.moveTo(ptx, pty);
+      ctx.quadraticCurveTo(
+        ptx + Math.cos(fa - .2) * fl * .5,
+        pty + Math.sin(fa - .2) * fl * .28 + fl * .08,
+        ptx + Math.cos(fa) * fl,
+        pty + Math.sin(fa) * fl * .46 + fl * .18
+      );
+      ctx.stroke();
+    });
+
+    // Ground line
+    ctx.fillStyle = '#0a1a0a';
+    ctx.fillRect(0, h * .82, w, h * .18);
+
+    // Horizon glow
+    const hg = ctx.createLinearGradient(0, h * .75, 0, h * .85);
+    hg.addColorStop(0, 'rgba(93,158,65,.12)');
+    hg.addColorStop(1, 'rgba(93,158,65,0)');
+    ctx.fillStyle = hg;
+    ctx.fillRect(0, h * .75, w, h * .12);
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
