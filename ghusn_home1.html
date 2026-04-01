@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OASIS — Desert Restoration Project</title>
+<title>Ghosn — Desert Restoration Project</title>
 <meta name="description" content="Transforming desert land into thriving green ecosystems.">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,600&family=Outfit:wght@200;300;400;500;600&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet"  href="shared.css"> 
 <style>
 /* ============================================================
    OASIS — Global Styles
@@ -145,61 +146,6 @@ body:has(button:hover) #cursor-ring { width: 20px; height: 20px; border-color: v
    OASIS — Hero & Page-Specific Styles
    ============================================================ */
 
-/* ── NAV ── */
-.nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.2rem 4rem;
-  background: rgba(8,20,10,0);
-  backdrop-filter: blur(0px);
-  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
-}
-.nav.scrolled {
-  background: rgba(8,20,10,.92);
-  backdrop-filter: blur(24px);
-  box-shadow: 0 1px 0 rgba(106,191,105,.12);
-}
-.nav-logo {
-  font-family: var(--font-display);
-  font-size: 1.5rem; font-weight: 700; letter-spacing: .04em;
-  color: var(--sand-pale);
-  display: flex; align-items: center; gap: .75rem;
-  text-decoration: none;
-  transition: opacity .2s;
-}
-.nav-logo:hover { opacity: .85; }
-.nav-logo-palm {
-  width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-}
-.nav-logo-palm svg { width: 28px; height: 28px; }
-.nav-logo-text { display: flex; flex-direction: column; line-height: 1; }
-.nav-logo-en { font-size: 1.3rem; font-weight: 700; color: #e8f5e9; letter-spacing: .05em; }
-.nav-logo-ar { font-size: .7rem; color: var(--oasis-light); letter-spacing: .06em; font-weight: 400; margin-top: .1rem; font-style: normal; font-family: var(--font-body); }
-
-.nav-links { display: flex; gap: .25rem; list-style: none; }
-.nav-links a {
-  font-size: .78rem; letter-spacing: .08em; text-transform: uppercase;
-  color: rgba(220,240,220,.55); font-weight: 400;
-  padding: .45rem .9rem; border-radius: 6px;
-  transition: color .25s, background .25s; position: relative;
-  display: flex; align-items: center; gap: .45rem;
-}
-.nav-links a svg { width: 14px; height: 14px; opacity: .7; }
-.nav-links a:hover { color: #e8f5e9; background: rgba(106,191,105,.1); }
-.nav-links a:hover svg { opacity: 1; }
-.nav-links a.active { color: var(--oasis-neon); background: rgba(106,191,105,.08); }
-
-.nav-actions { display: flex; gap: .75rem; align-items: center; }
-.btn-nav-signout {
-  padding: .5rem 1.3rem; border-radius: 6px;
-  background: rgba(106,191,105,.12); border: 1px solid rgba(106,191,105,.3);
-  color: var(--oasis-neon); font-size: .75rem; font-weight: 500; letter-spacing: .08em;
-  transition: all .25s; text-transform: uppercase; cursor: pointer;
-  display: flex; align-items: center; gap: .4rem;
-}
-.btn-nav-signout svg { width: 13px; height: 13px; }
-.btn-nav-signout:hover { background: rgba(106,191,105,.2); border-color: var(--oasis-neon); color: #fff; transform: translateY(-1px); }
 
 /* ── HERO ── */
 #hero {
@@ -468,77 +414,7 @@ section { position: relative; }
 }
 .btn-cta-ghost:hover { border-color: rgba(248,240,216,.5); transform: translateY(-2px); }
 
-/* FOOTER */
-footer {
-  background: #070f08;
-  padding: 0;
-  border-top: 1px solid rgba(106,191,105,.1);
-  overflow: hidden;
-  position: relative;
-}
-.footer-wave {
-  width: 100%; height: 80px; display: block;
-  margin-bottom: -2px;
-}
-.footer-main {
-  padding: 4rem 6rem 3rem;
-  max-width: 1400px; margin: 0 auto;
-}
-.footer-top {
-  display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 4rem;
-  padding-bottom: 3rem;
-  border-bottom: 1px solid rgba(106,191,105,.08);
-  margin-bottom: 2.5rem;
-}
-.footer-brand {}
-.footer-brand-logo {
-  display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem;
-}
-.footer-brand-logo svg { width: 36px; height: 36px; }
-.footer-brand-name { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: #e8f5e9; }
-.footer-brand-name span { color: var(--oasis-bright); }
-.footer-brand-desc { font-size: .82rem; line-height: 1.75; color: rgba(180,220,180,.45); max-width: 240px; margin-bottom: 1.5rem; }
-.footer-social { display: flex; gap: .6rem; }
-.footer-social a {
-  width: 34px; height: 34px; border-radius: 8px;
-  background: rgba(106,191,105,.1); border: 1px solid rgba(106,191,105,.2);
-  display: flex; align-items: center; justify-content: center;
-  transition: all .25s; color: rgba(180,220,180,.6);
-}
-.footer-social a:hover { background: rgba(106,191,105,.2); border-color: var(--oasis-bright); color: var(--oasis-bright); transform: translateY(-2px); }
-.footer-social a svg { width: 14px; height: 14px; }
-.footer-col-title {
-  font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
-  color: var(--oasis-bright); margin-bottom: 1.2rem; font-family: var(--font-mono);
-}
-.footer-col-links { display: flex; flex-direction: column; gap: .6rem; }
-.footer-col-links a {
-  font-size: .83rem; color: rgba(180,220,180,.45);
-  transition: color .2s, padding-left .2s; display: flex; align-items: center; gap: .4rem;
-}
-.footer-col-links a::before { content: ''; width: 0; height: 1px; background: var(--oasis-bright); transition: width .2s; }
-.footer-col-links a:hover { color: rgba(200,240,200,.9); padding-left: .4rem; }
-.footer-col-links a:hover::before { width: 12px; }
-.footer-bottom-row {
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 1rem;
-}
-.footer-copy { font-size: .72rem; color: rgba(180,220,180,.25); }
-.footer-badge {
-  display: flex; align-items: center; gap: .5rem;
-  font-size: .72rem; color: rgba(180,220,180,.35);
-}
-.footer-badge-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--oasis-bright);
-  animation: pulse-dot 2s ease infinite;
-}
-@keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:.5} }
 
-/* footer tree animation */
-.footer-trees {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 100px;
-  pointer-events: none; opacity: .18;
-}
 
 /* ── BIRDS CANVAS ── */
 #birdsCanvas {
