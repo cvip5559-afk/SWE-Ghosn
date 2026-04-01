@@ -738,7 +738,7 @@ footer {
       </a>
     </li>
     <li>
-      <a href="#vision" id="nav-search">
+      <a href="#search-section" id="nav-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Search
       </a>
@@ -922,6 +922,72 @@ footer {
   </div>
 </section>
 
+<!-- SEARCH REPORTS -->
+<section class="reports-card reveal" id="search-section" style="margin:2rem auto; max-width:1100px;">
+
+  <div class="reports-head" style="flex-direction:column; align-items:center; text-align:center; gap:1rem;">
+
+  <div>
+    <div style="text-align:center; margin-bottom:1.5rem;">
+
+  <div style="
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.5rem,5vw,4rem);
+    font-weight: 300;
+    color: var(--n900);
+    line-height:1;
+  ">
+    Search reports
+  </div>
+
+  <div style="
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem,4vw,3rem);
+    font-style: italic;
+    color: var(--g300);
+    margin-top:.3rem;
+  ">
+    find what matters.
+  </div>
+
+</div>
+  </div>
+
+  <!-- SEARCH BAR FULL WIDTH -->
+  <div style="width:100%; display:flex; gap:.6rem;">
+
+    <input 
+      id="searchInput"
+      placeholder="Search by title or location..."
+      style="flex:1; padding:.8rem 1rem; border-radius:var(--r-sm); border:1px solid var(--border-l);"
+    >
+
+    <select id="severityFilter" style="padding:.8rem; border-radius:var(--r-sm);">
+      <option value="">All (1-5)</option>
+      <option value="5">5 - Very High</option>
+      <option value="4">4 - High</option>
+      <option value="3">3 - Medium</option>
+      <option value="2">2 - Low</option>
+      <option value="1">1 - Very Low</option>
+    </select>
+
+  </div>
+
+</div>
+
+  <div class="reports-body" style="margin-top:2rem;">
+
+    <div class="report-list" id="reportList" 
+     style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+</div>
+
+    <div id="emptyMsg" style="display:none; text-align:center; color:var(--n500); margin-top:1rem;">
+      No reports found for this filter
+    </div>
+
+  </div>
+
+</section>
 <!-- ══════════════════════════════════════════════
      03 — STEP BY STEP 
 ════════════════════════════════════════════════ -->
@@ -2745,6 +2811,210 @@ window.addEventListener('scroll', () => {
   }
 }, { passive: true });
 
+</script>
+
+<script>
+
+// ───── DATA (بلاغات احترافية) ─────
+const reportsData = [
+  {
+    title: "Severe desertification near Wadi Hanifa",
+    location: "Riyadh, Saudi Arabia",
+    severity: 5,
+    status: "Under Review",
+    date: "Mar 25, 2026",
+    description: "Extensive land degradation observed with loss of vegetation cover due to prolonged drought and lack of irrigation systems.",
+    image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9"
+  },
+  {
+    title: "Abandoned green space in Al Yasmin district",
+    location: "Al Yasmin, Riyadh",
+    severity: 3,
+    status: "Under Review",
+    date: "Mar 18, 2026",
+    description: "Public park left without maintenance. No active irrigation or landscaping, leading to dry soil and dying plants.",
+    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
+  },
+  {
+    title: "Dead trees along King Salman Road",
+    location: "King Salman Rd, Riyadh",
+    severity: 5,
+    status: "Resolved",
+    date: "Mar 10, 2026",
+    description: "Multiple roadside trees have dried out due to irrigation system failure. Area has now been partially restored.",
+    image: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e"
+  },
+  {
+    title: "Dry soil near neighborhood school",
+    location: "Al Narjis, Riyadh",
+    severity: 2,
+    status: "Under Review",
+    date: "Mar 05, 2026",
+    description: "Soil condition is weak and lacks vegetation. Early signs of desertification detected around the school perimeter.",
+    image: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6"
+  }
+];
+
+
+// ───── SEVERITY COLORS ─────
+const severityColor = {
+  1: "#22c55e", // أخضر
+  2: "#84cc16",
+  3: "#facc15",
+  4: "#f97316",
+  5: "#ef4444"  // أحمر
+};
+
+
+// ───── RENDER ─────
+function renderReports(list) {
+  const container = document.getElementById("reportList");
+  const empty = document.getElementById("emptyMsg");
+
+  container.innerHTML = "";
+
+  if (list.length === 0) {
+    empty.style.display = "block";
+    return;
+  }
+
+  empty.style.display = "none";
+
+  list.forEach(r => {
+
+    container.innerHTML += `
+      <article class="report-item" style="
+        position:relative;
+        background:white;
+        border-radius:14px;
+        padding:1rem;
+        box-shadow: var(--sh-sm);
+        border:1px solid var(--border-l);
+        transition: all .25s ease;
+        isolation:isolate;
+        overflow:hidden;
+        cursor:pointer;
+      "
+      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--sh-md)'"
+      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--sh-sm)'"
+      >
+
+        <!-- طبقة حماية من الشفافية -->
+        <div style="
+          position:absolute;
+          inset:0;
+          background:white;
+          z-index:0;
+        "></div>
+
+        <!-- الصورة -->
+        <img src="${r.image}" 
+          style="
+            position:relative;
+            z-index:1;
+            width:100%;
+            height:160px;
+            object-fit:cover;
+            border-radius:10px;
+            margin-bottom:.8rem;
+          ">
+
+        <!-- المحتوى -->
+        <div style="position:relative; z-index:1;">
+
+          <!-- العنوان -->
+          <h3 style="
+            font-size:1.05rem;
+            font-weight:700;
+            color:#1a2e1a;
+            margin-bottom:.3rem;
+          ">
+            ${r.title}
+          </h3>
+
+          <!-- الحالة -->
+          <p style="
+            font-size:.8rem;
+            color:${r.status === "Resolved" ? "#22c55e" : "#f59e0b"};
+            font-weight:600;
+            margin-bottom:.3rem;
+          ">
+            ${r.status}
+          </p>
+
+          <!-- الموقع + السيفيرتي + التاريخ -->
+          <p style="
+            font-size:.8rem;
+            color:#3d5a3d;
+            margin-bottom:.5rem;
+          ">
+            ${r.location}
+
+            <span style="
+              display:inline-block;
+              padding:.25rem .6rem;
+              border-radius:999px;
+              font-size:.7rem;
+              font-weight:700;
+              background:${severityColor[r.severity]};
+              color:white;
+              margin:0 .4rem;
+            ">
+              Severity ${r.severity}/5
+            </span>
+
+            • ${r.date}
+          </p>
+
+          <!-- الوصف -->
+          <p style="
+            font-size:.85rem;
+            color:#1f2937;
+            line-height:1.6;
+            opacity:1;
+          ">
+            ${r.description}
+          </p>
+
+        </div>
+
+      </article>
+    `;
+  });
+}
+
+
+
+
+// ───── SEARCH + FILTER ─────
+function handleSearch() {
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const severity = document.getElementById("severityFilter").value;
+
+  let filtered = reportsData;
+
+  if (q) {
+    filtered = filtered.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      r.location.toLowerCase().includes(q)
+    );
+  }
+
+  if (severity) {
+    filtered = filtered.filter(r => r.severity == Number(severity));
+  }
+
+  renderReports(filtered);
+}
+
+
+// ───── EVENTS ─────
+document.getElementById("searchInput").addEventListener("input", handleSearch);
+document.getElementById("severityFilter").addEventListener("change", handleSearch);
+
+
+// أول تشغيل
+renderReports(reportsData);
 </script>
 </body>
 </html>
