@@ -862,8 +862,9 @@ footer {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
-  .nav { padding: 1.2rem 2rem; }
-  .nav-links { display: none; }
+  .nav { padding: 1.2rem 2rem;}
+  #mainNav{height: auto;
+  margin: auto;}
   #about, #vision, #restoration, #future, #cta-band, footer { padding-left: 2rem; padding-right: 2rem; }
   .about-grid { grid-template-columns: 1fr; gap: 4rem; }
   .vision-cards { grid-template-columns: 1fr; }
@@ -900,8 +901,8 @@ footer {
 
     .search-wrap {
       max-width: 1100px;
-      margin: 0 auto;
-      padding: calc(var(--nav-h) + 2rem) 2rem 4rem;
+      margin: auto;
+      padding-top: 100px;
     }
 
     /* العنوان */
@@ -1095,7 +1096,7 @@ input, textarea, select {
     </button>
   </div>
 </nav>
-
+<br><br><br>
 <!-- CONTENT -->
 <main class="submit-wrap">
 
