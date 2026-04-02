@@ -168,20 +168,50 @@ button { cursor: pointer; font-family: inherit; }
   transition: background .2s, color .2s;
   white-space: nowrap;
 }
-.nav-link svg {
-  width: 15px; height: 15px;
-  stroke: currentColor; fill: none; stroke-width: 1.8;
-  flex-shrink: 0;
+  .nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 4rem;
+  background: rgba(8,20,10,0);
+  backdrop-filter: blur(0px);
+  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
 }
-.nav-link:hover {
-  background: var(--g10);
-  color: var(--g400);
+ .nav-links a {
+  position: relative;
+  font-size: .78rem;
+  color: #6a7d6a;
+  padding: .45rem .9rem;
+  border-radius: 6px;
+  transition: all .25s;
 }
-.nav-link.active {
-  background: var(--g10);
-  color: rgb(217, 225, 217);
-  font-weight: 600;
+
+.nav-links a:hover {
+  color: #2d7a2d;
+  background: rgba(45,122,45,0.08);
 }
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: #2d7a2d;
+  transform: scaleX(0);
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+  transform: scaleX(1);
+} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+
+   
 
 /* Sign Out */
 .nav-signout {

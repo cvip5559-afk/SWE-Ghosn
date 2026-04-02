@@ -343,24 +343,7 @@
   display: flex; align-items: center; gap: .45rem;
 }
 .nav-links a svg { width: 14px; height: 14px; opacity: .7; }
-.nav-links a:hover {  color: #2d7a2d;
-  background: rgba(45,122,45,0.08);}
-.nav-links a:hover svg { opacity: 1; }
-.nav-links a {
-  position: relative;
-}
 
-.nav-links a.active::after {
-      transform: scaleX(1) !important;
-  content: "" !important;
-  position: absolute !important;
-  bottom: -4px !important;
-  left: 10% !important;
-  width: 80% !important;
-  height: 2px !important;
-  background: #2d7a2d !important;
-  border-radius: 2px !important;
-}
 
 .nav-actions { display: flex; gap: .75rem; align-items: center; }
 .btn-nav-signout {
@@ -772,14 +755,6 @@ footer {
 .phase-item:last-child { border-bottom: none; }
 .phase-item:hover { padding-left: .75rem; }
 
-/* Nav link active underline */
-.nav-links a { position: relative; }
-.nav-links a::after {
-  content: ''; position: absolute; bottom: 0; left: .9rem; right: .9rem;
-  height: 1px; background: var(--oasis-bright);
-  transform: scaleX(0); transition: transform .25s var(--ease-out);
-}
-.nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
 
 /* ── PALM TREE ANIMATION ── */
 @keyframes palm-sway-1 {
@@ -862,9 +837,11 @@ footer {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
-  .nav { padding: 1.2rem 2rem;}
-  #mainNav{height: auto;
-  margin: auto;}
+  .nav { padding: 1.2rem 2rem; }
+   @media (max-width: 768px) {
+  #mainNav {
+    height: 150px;
+  } }
   #about, #vision, #restoration, #future, #cta-band, footer { padding-left: 2rem; padding-right: 2rem; }
   .about-grid { grid-template-columns: 1fr; gap: 4rem; }
   .vision-cards { grid-template-columns: 1fr; }
@@ -872,27 +849,7 @@ footer {
   .future-grid { grid-template-columns: 1fr; }
 }
 
-/* FORCE ACTIVE STYLE */
-.nav-links a.active {
-  color: #2d7a2d !important;
-  background: rgba(45,122,45,0.15) !important;
-  border-radius: 6px;
-  font-weight: 700;
-  padding: .45rem .9rem;
-}
-
-/* UNDERLINE */
-.nav-links a.active::after {
-  content: "";
-  position: absolute;
-  bottom: -3px;
-  left: 10%;
-  width: 80%;
-  height: 2px;
-  background: #2d7a2d;
-  transform: scaleX(1) !important;
-}
-  </style>
+</style>
   <style>
     body {
       background: #e9e4d8;
@@ -901,7 +858,7 @@ footer {
 
     .search-wrap {
       max-width: 1100px;
-      margin: auto;
+      
       padding-top: 100px;
     }
 
@@ -1044,7 +1001,51 @@ input, textarea, select {
   border-radius:10px;
   display:none;
 }
+ 
+    .nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 4rem;
+  background: rgba(8,20,10,0);
+  backdrop-filter: blur(0px);
+  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
+}
+ .nav-links a {
+  position: relative;
+  font-size: .78rem;
+  color: #6a7d6a;
+  padding: .45rem .9rem;
+  border-radius: 6px;
+  transition: all .25s;
+}
 
+.nav-links a:hover {
+  color: #2d7a2d;
+  background: rgba(45,122,45,0.08);
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: #2d7a2d;
+  transform: scaleX(0);
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+  transform: scaleX(1);
+} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+
+    
 </style>
 </head>
 

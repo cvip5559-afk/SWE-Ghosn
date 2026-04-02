@@ -1,3 +1,4 @@
+<!-- نفس كل شيء فوق (الهيدر + CSS) لا تغيرينه -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,51 +17,16 @@
       width: 85%;
       margin: 100px auto 40px;
     }
-    
-    .nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.2rem 4rem;
-  background: rgba(8,20,10,0);
-  backdrop-filter: blur(0px);
-  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
-}
- .nav-links a {
-  position: relative;
-  font-size: .78rem;
-  color: #6a7d6a;
-  padding: .45rem .9rem;
-  border-radius: 6px;
-  transition: all .25s;
-}
 
-.nav-links a:hover {
-  color: #2d7a2d;
-  background: rgba(45,122,45,0.08);
-}
+    #mainNav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        background-color: rgba(8,20,10);
+    }
 
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 10%;
-  width: 80%;
-  height: 2px;
-  background: #2d7a2d;
-  transform: scaleX(0);
-  transition: transform .25s ease;
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  transform: scaleX(1);
-} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
-
-    
     /* PROFILE */
     .profile {
       background: rgb(246, 244, 239);
@@ -114,8 +80,8 @@
     font-size: 14px;
     color: #4caf50;
     font-weight: bold;
-    border: solid 0.1px rgb(53, 123, 167);
-    background-color: rgb(53, 123, 167);
+    border: solid 0.1px rgb(156, 156, 21);
+    background-color: rgb(156, 156, 21);
     border-radius: 10px;
     padding: 2px 8px;
     color: white;
@@ -179,8 +145,9 @@
     .medium { background: #b45309; color: #ffffff; }
     .low { background: #15803d; color: #ffffff; }
 
-    .review { background: #dbeafe; color: #1d4ed8; }
+    .going { background: #dbeafe; color: #1d4ed8; }
     .resolved { background: #d1fae5; color: #047857; }
+    .pend { background: #fef3c7; color: #b45309; }
     
     .buttons {
       display: flex;
@@ -236,49 +203,13 @@
       text-align: center;
       margin-top: 40px;
     }
-    .nav-links a {
-  position: relative;
-  font-size: .78rem;
-  color: #6a7d6a;
-  padding: .45rem .9rem;
-  border-radius: 6px;
-  transition: all .25s;
-}
 
-.nav-links a:hover {
-  color: #2d7a2d;
-  background: rgba(45,122,45,0.08);
-}
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 10%;
-  width: 80%;
-  height: 2px;
-  background: #2d7a2d;
-  transform: scaleX(0);
-  transition: transform .25s ease;
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  transform: scaleX(1);
-} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
-
-  @media (max-width: 1024px) {
-  .nav { padding: 1.2rem 2rem; }
-   @media (max-width: 768px) {
+    @media (max-width: 768px) {
   #mainNav {
+   
     height: 150px;
+
   } }
-  #about, #vision, #restoration, #future, #cta-band, footer { padding-left: 2rem; padding-right: 2rem; }
-  .about-grid { grid-template-columns: 1fr; gap: 4rem; }
-  .vision-cards { grid-template-columns: 1fr; }
-  .timeline-item { grid-template-columns: 1fr; gap: 1.5rem; }
-  .future-grid { grid-template-columns: 1fr; }
-}
   </style>
 </head>
 
@@ -335,80 +266,85 @@
   <!-- PROFILE INFO -->
   <div class="profile">
     <div class="user">
-      <div class="avatar">S</div>
+      <div class="avatar">V</div>
       <div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap; padding-bottom: 10px;">
-        <div class="name">Sarah Al-Mutairi</div> <div class="role">Resident</div>
+          <div class="name">Omar Al-Qahtani</div> 
+          <div class="role">Volunteer</div>
         </div>
         <div class="info">
-            <p>📍Location: Riyadh - Al Yasmin</p>
-            <p>📅 Member since: Jan 2023</p>
+          <p>📍Location: Riyadh - Al Malqa</p>
+          <p>📅 Member since: Feb 2023</p>
         </div>
       </div>
     </div>
 
     <div>
       <div class="reports-count">
-        <span>Reports</span>
-        <h2>5</h2>
+        <span>Contributions</span>
+        <h2>8</h2>
       </div>
-      <br>
-      
     </div>
   </div>
 
-  <!-- REPORTS -->
+  <!-- VOLUNTEER ACTIVITIES -->
   <div class="reports">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <h3>My Reports</h3>
-<p class="btn"><a href="submit.html">+ New Report</a></p>
+      <h3>My Activities</h3>
+      <p class="btn"><a href="#">+ Join Activity</a></p>
     </div>
+
+    <!-- Activity 1 -->
     <div class="report">
-        <img src="images/report1.jpg" alt="Dry Area" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-      <div style="display: flex; justify-content:space-between;"><h4>Dry area near park</h4>
-      <div class="buttons">
-      <button class="editButton"><a href="edit.html">Edit</a></button>
-      <button class="deleteButton">Delete</button></div></div>
+      <img src="images/report1.jpg" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+
+      <div style="display:flex; justify-content:space-between;">
+        <h4>Tree Planting Campaign</h4>
+      </div>
+
       <div class="meta">📍Al Yasmin • Mar 20</div>
 
       <div class="tags">
-        <span class="tag high">5/5</span>
-        <span class="tag review">Under Review</span>
+        <span class="tag resolved">Successful</span>
       </div>
 
-      <p>The area needs trees and shade.</p>
+      <p>Participated in planting trees in dry areas near public park.</p>
     </div>
 
+    <!-- Activity 2 -->
     <div class="report">
-        <img src="images/report2.jpg" alt="Empty Roadside" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-      <div style="display: flex; justify-content:space-between;"><h4>Empty roadside area</h4>
-      <div class="buttons">
-      <button class="editButton"><a href="edit.html">Edit</a></button>
-      <button class="deleteButton">Delete</button></div></div>
+      <img src="images/report2.jpg" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+
+      <div style="display:flex; justify-content:space-between;">
+        <h4>Area Cleaning Campaign</h4>
+
+      </div>
+
       <div class="meta">📍Al Malqa • Mar 12</div>
 
       <div class="tags">
-        <span class="tag medium">3/5</span>
-        <span class="tag resolved">Resolved</span>
+        <span class="tag going">Ongoing</span>
       </div>
 
-      <p>This area was empty and now planted.</p>
+      <p>Helping clean and maintain green areas in the neighborhood.</p>
     </div>
 
+    <!-- Activity 3 -->
     <div class="report">
-        <img src="images/report4.jpg" alt="Dry Soil" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-      <div style="display: flex; justify-content:space-between;"><h4>Dry soil near school</h4>
-      <div class="buttons">
-      <button class="editButton"><a href="edit.html">Edit</a></button>
-      <button class="deleteButton">Delete</button></div></div>
+      <img src="images/report4.jpg" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+
+      <div style="display:flex; justify-content:space-between;">
+        <h4>Irrigation Support</h4>
+
+      </div>
+
       <div class="meta">📍Al Narjis • Mar 5</div>
 
       <div class="tags">
-        <span class="tag low">2/5</span>
-        <span class="tag review">Under Review</span>
+        <span class="tag pend">Pending</span>
       </div>
 
-      <p>The soil is dry and needs better care.</p>
+      <p>Supporting irrigation systems for newly planted trees.</p>
     </div>
 
   </div>
