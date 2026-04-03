@@ -17,13 +17,6 @@ body {
   background: #e9e4d8;
 }
 
-/* NAV */
-.nav-links a { color:#1f3d1f; }
-.nav-links a.active {
-  color:#2d7a2d;
-  background: rgba(45,122,45,0.15);
-  font-weight:700;
-}
 
 /* PAGE */
 .submit-wrap {
@@ -93,50 +86,7 @@ input, textarea, select {
   display:none;
 }
  
-    .nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.2rem 4rem;
-  background: rgba(8,20,10,0);
-  backdrop-filter: blur(0px);
-  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
-}
- .nav-links a {
-  position: relative;
-  font-size: .78rem;
-  color: #6a7d6a;
-  padding: .45rem .9rem;
-  border-radius: 6px;
-  transition: all .25s;
-}
 
-.nav-links a:hover {
-  color: #2d7a2d;
-  background: rgba(45,122,45,0.08);
-}
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 10%;
-  width: 80%;
-  height: 2px;
-  background: #2d7a2d;
-  transform: scaleX(0);
-  transition: transform .25s ease;
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  transform: scaleX(1);
-} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
-
-    
 </style>
 </head>
 
@@ -172,7 +122,7 @@ input, textarea, select {
       </a>
     </li>
     <li>
-      <a href="residentProfile.html" id="nav-profile" style="color: #b7deb7;">
+      <a href="residentProfile.html" id="nav-profile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Profile
       </a>

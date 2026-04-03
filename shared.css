@@ -511,7 +511,7 @@ button { cursor: pointer; font-family: inherit; }
 .nav-links a svg { width: 14px; height: 14px; opacity: .7; }
 .nav-links a:hover { color: #e8f5e9; background: rgba(106,191,105,.1); }
 .nav-links a:hover svg { opacity: 1; }
-.nav-links a.active { color: var(--oasis-neon); background: rgba(106,191,105,.08); }
+.nav-links a.active { color: rgb(189, 206, 179); background: rgba(106,191,105,.08); }
 
 .nav-actions { display: flex; gap: .75rem; align-items: center; }
 .btn-nav-signout {
@@ -596,3 +596,9 @@ footer {
   position: absolute; bottom: 0; left: 0; right: 0; height: 100px;
   pointer-events: none; opacity: .18;
 }
+@media (max-width: 1024px) {
+  .nav { padding: 1.2rem 2rem; }
+   @media (max-width: 768px) {
+  #mainNav {
+    height: 150px;
+  } }}
