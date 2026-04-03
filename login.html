@@ -258,6 +258,9 @@
         <div class="input-wrap">
           <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required/>
+          <span onclick="togglePw('password', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
         </div>
       </div>
 
@@ -346,7 +349,15 @@ function handleLogin() {
   }
   if (err) err.classList.remove('show');
 
-  // TODO: POST /api/auth/login { email, password }
+  // Toggle password visibility
+function togglePw(id, icon) {
+  const input = document.getElementById(id);
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  icon.style.opacity = isText ? '1' : '0.4';
+}
+
+// TODO: POST /api/auth/login { email, password }
   // On success → store token → redirect
   console.log('Login attempt:', email);
   window.location.href = 'ghusn_home1.html';
