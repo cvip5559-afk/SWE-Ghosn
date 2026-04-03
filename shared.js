@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGlobalBirds();
   initScrollReveal();
   initFooterCanvas();
+  applyRoleNav(); // ← Role-based nav (runs on every page)
 });
 
 // ── Sign Out ──────────────────────────────────
@@ -214,4 +215,39 @@ function initFooterCanvas() {
     requestAnimationFrame(animate);
   }
   animate();
+}
+
+// ══════════════════════════════════════════════
+// Role-based Nav — runs on every page
+// ══════════════════════════════════════════════
+function applyRoleNav() {
+  var role = localStorage.getItem('userRole'); // 'resident' | 'volunteer'
+
+  // Volunteer → إخفاء Submit Report
+  if (role === 'volunteer') {
+    var reportEl = document.getElementById('nav-report');
+    if (reportEl && reportEl.parentElement) {
+      reportEl.parentElement.style.display = 'none';
+    }
+  }
+
+  // Resident → إخفاء Search
+  if (role === 'resident') {
+    var searchEl = document.getElementById('nav-search');
+    if (searchEl && searchEl.parentElement) {
+      searchEl.parentElement.style.display = 'none';
+    }
+  }
+
+  // Profile → توجيه حسب الـ role
+  var profileEl = document.getElementById('nav-profile');
+  if (profileEl) {
+    profileEl.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.href = (role === 'volunteer')
+        ? 'volunteerProfile.html'
+        : 'residentProfile.html';
+    });
+    profileEl.style.cursor = 'pointer';
+  }
 }
