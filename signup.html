@@ -484,8 +484,11 @@ function handleSignUp(){
   if(!ag){ show('Please agree to the Terms of Service.'); return; }
   if(err) err.classList.remove('show');
 
+  // Save role to localStorage
+  localStorage.setItem('userRole', selectedRole);
+
   // TODO: POST /api/auth/register { firstName:fn, lastName:ln, email:em, password:pw }
-  console.log('Register:', fn, ln, em);
+  console.log('Register:', fn, ln, em, 'Role:', selectedRole);
   window.location.href = 'ghusn_home1.html';
 }
 </script>
