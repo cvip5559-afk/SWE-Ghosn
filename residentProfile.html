@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resident Profile</title>
+  <link rel="stylesheet" href="shared.css">
+
+  <style>
+    body {
+  background-color: #ded8c8d0;
+      font-family: 'DM Sans', sans-serif;
+      margin: 0;
+    }
+
+    .container {
+      width: 85%;
+      margin: 100px auto 40px;
+    }
+    
+    .nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 4rem;
+  background: rgba(8,20,10,0);
+  backdrop-filter: blur(0px);
+  transition: background .5s, backdrop-filter .5s, box-shadow .5s;
+}
+ .nav-links a {
+  position: relative;
+  font-size: .78rem;
+  color: #6a7d6a;
+  padding: .45rem .9rem;
+  border-radius: 6px;
+  transition: all .25s;
+}
+
+.nav-links a:hover {
+  color: #2d7a2d;
+  background: rgba(45,122,45,0.08);
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: #2d7a2d;
+  transform: scaleX(0);
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+  transform: scaleX(1);
+} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+
+    
+    /* PROFILE */
+    .profile {
+      background: rgb(246, 244, 239);
+      padding: 50px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      background: rgb(2, 74, 2);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .name {
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .info {
+      font-size: 16px;
+      color: rgb(69, 119, 68);
+    }
+
+    .reports-count {
+        border: solid 1.5px #8fac8f;
+        border-radius: 10px;
+        background-color: #e9f6e9;
+        padding: 10px;
+        height: auto;
+        width: 125px;
+      text-align: center;
+    }
+    .role{
+    font-size: 14px;
+    color: #4caf50;
+    font-weight: bold;
+    border: solid 0.1px rgb(53, 123, 167);
+    background-color: rgb(53, 123, 167);
+    border-radius: 10px;
+    padding: 2px 8px;
+    color: white;
+    text-align: center;
+    }
+
+    .reports-count h2 {
+      margin: 0;
+      color: green;
+    }
+
+    /* BUTTON */
+    .btn {
+      background: rgb(3, 55, 3);
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* REPORTS */
+    .reports { 
+      background: rgb(246, 244, 239);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .report {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .report h4 {
+      margin: 0;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: gray;
+      margin: 5px 0;
+    }
+
+    .tags {
+      display: flex;
+      gap: 10px;
+      margin: 5px 0;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .high { background: #b91c1c; color: #ffffff; }
+    .medium { background: #b45309; color: #ffffff; }
+    .low { background: #15803d; color: #ffffff; }
+
+    .review { background: #dbeafe; color: #1d4ed8; }
+    .resolved { background: #d1fae5; color: #047857; }
+    
+    .buttons {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }  
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    } 
+    .editButton {
+      background: #38723a;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.1s ease-out, box-shadow 0.3s ease-out;
+
+    }
+    .editButton:hover {
+      transform: scale(1.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .editButton:active {
+  transform: scale(0.95);
+}
+    .deleteButton {
+      background: #b03d35;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+        transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+    }
+    .deleteButton:hover {
+      transform: scale(1.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .deleteButton:active {
+  transform: scale(0.95);
+}
+    /* FOOTER */
+    footer {
+      background: #111;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .nav-links a {
+  position: relative;
+  font-size: .78rem;
+  color: #6a7d6a;
+  padding: .45rem .9rem;
+  border-radius: 6px;
+  transition: all .25s;
+}
+
+.nav-links a:hover {
+  color: #2d7a2d;
+  background: rgba(45,122,45,0.08);
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: #2d7a2d;
+  transform: scaleX(0);
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+  transform: scaleX(1);
+} a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+
+  @media (max-width: 1024px) {
+  .nav { padding: 1.2rem 2rem; }
+   @media (max-width: 768px) {
+  #mainNav {
+    height: 150px;
+  } }
+  #about, #vision, #restoration, #future, #cta-band, footer { padding-left: 2rem; padding-right: 2rem; }
+  .about-grid { grid-template-columns: 1fr; gap: 4rem; }
+  .vision-cards { grid-template-columns: 1fr; }
+  .timeline-item { grid-template-columns: 1fr; gap: 1.5rem; }
+  .future-grid { grid-template-columns: 1fr; }
+}
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
+
+  <a href="#hero" class="nav-logo">
+  <img src="images/logoo.png" alt="Ghosn Logo" 
+       style="width:107px; height:107px; object-fit:contain; display:block;">
+  
+  </div>
+</a>
+
+  <ul class="nav-links">
+    <li>
+      <a href="ghusn_home1.html" id="nav-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+    </li>
+    <li>
+      <a href="submit.html" id="nav-report" >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+        Submit Report
+      </a>
+    </li>
+    <li>
+      <a href="search.html" id="nav-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </a>
+    </li>
+    <li>
+      <a href="residentProfile.html" id="nav-profile" class="active" style="color: #b7deb7;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </a>
+    </li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-nav-signout" style="color: #b7deb7;" onclick="alert('Signing out...')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sign Out
+    </button>
+  </div>
+</nav>
+<br><br><br>
+
+<div class="container">
+
+  <!-- PROFILE INFO -->
+  <div class="profile">
+    <div class="user">
+      <div class="avatar">S</div>
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap; padding-bottom: 10px;">
+        <div class="name">Sarah Al-Mutairi</div> <div class="role">Resident</div>
+        </div>
+        <div class="info">
+            <p>📍Location: Riyadh - Al Yasmin</p>
+            <p>📅 Member since: Jan 2023</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="reports-count">
+        <span>Reports</span>
+        <h2>5</h2>
+      </div>
+      <br>
+      
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="reports">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h3>My Reports</h3>
+<p class="btn"><a href="submit.html">+ New Report</a></p>
+    </div>
+    <div class="report">
+        <img src="images/report1.jpg" alt="Dry Area" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+      <div style="display: flex; justify-content:space-between;"><h4>Dry area near park</h4>
+      <div class="buttons">
+      <button class="editButton"><a href="edit.html">Edit</a></button>
+      <button class="deleteButton">Delete</button></div></div>
+      <div class="meta">📍Al Yasmin • Mar 20</div>
+
+      <div class="tags">
+        <span class="tag high">5/5</span>
+        <span class="tag review">Under Review</span>
+      </div>
+
+      <p>The area needs trees and shade.</p>
+    </div>
+
+    <div class="report">
+        <img src="images/report2.jpg" alt="Empty Roadside" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+      <div style="display: flex; justify-content:space-between;"><h4>Empty roadside area</h4>
+      <div class="buttons">
+      <button class="editButton"><a href="edit.html">Edit</a></button>
+      <button class="deleteButton">Delete</button></div></div>
+      <div class="meta">📍Al Malqa • Mar 12</div>
+
+      <div class="tags">
+        <span class="tag medium">3/5</span>
+        <span class="tag resolved">Resolved</span>
+      </div>
+
+      <p>This area was empty and now planted.</p>
+    </div>
+
+    <div class="report">
+        <img src="images/report4.jpg" alt="Dry Soil" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+      <div style="display: flex; justify-content:space-between;"><h4>Dry soil near school</h4>
+      <div class="buttons">
+      <button class="editButton"><a href="edit.html">Edit</a></button>
+      <button class="deleteButton">Delete</button></div></div>
+      <div class="meta">📍Al Narjis • Mar 5</div>
+
+      <div class="tags">
+        <span class="tag low">2/5</span>
+        <span class="tag review">Under Review</span>
+      </div>
+
+      <p>The soil is dry and needs better care.</p>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <!-- Animated tree silhouettes -->
+  <canvas class="footer-trees" id="footerTreesCanvas" aria-hidden="true"></canvas>
+
+  <div class="footer-main">
+    <div class="footer-top">
+
+      <div class="footer-brand">
+        <div class="footer-brand-logo">
+          <svg viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 34 C13 28 12 22 14 16" stroke="#6abf69" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 16 C10 14 5 12 2 8" stroke="#4caf50" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 18 C9 17 4 18 1 15" stroke="#4caf50" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 15 C11 11 8 7 9 3" stroke="#4caf50" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 16 C18 14 23 12 26 8" stroke="#81c784" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 18 C19 17 24 18 27 15" stroke="#81c784" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 15 C17 11 20 7 19 3" stroke="#81c784" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 14 C14 10 13 6 14 2" stroke="#a5d6a7" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 34 C11 33 8 34 6 33" stroke="#6abf69" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 34 C17 33 20 34 22 33" stroke="#6abf69" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="footer-brand-name">Ghosn <span>غصن</span></span>
+        </div>
+        <p class="footer-brand-desc">Combining community action, data tools, and environmental science to reverse desertification across the region.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Twitter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+          </a>
+          <a href="#" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="#" aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Navigation</div>
+        <div class="footer-col-links">
+          <a href="#hero">Home</a>
+          <a href="#about">About</a>
+          <a href="#vision">Platform</a>
+          <a href="#restoration">How It Works</a>
+          <a href="#impact">Our Impact</a>
+          <a href="#join">Join</a>
+          <a href="#future">Future Vision</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <div class="footer-col-links">
+          <a href="#">Submit a Report</a>
+          <a href="#">Tree Campaigns</a>
+          <a href="#">Interactive Map</a>
+          <a href="#">Impact Dashboard</a>
+          <a href="#">Community Forum</a>
+          <a href="#">Learning Hub</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-col-links">
+          <a href="#">hello@ghosn.eco</a>
+          <a href="#">Partner With Us</a>
+          <a href="#">Press & Media</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+        </div>
+        <div style="margin-top:1.5rem; padding:1rem 1.2rem; background:rgba(106,191,105,.08); border:1px solid rgba(106,191,105,.15); border-radius:10px;">
+          <div style="font-size:.72rem; color:var(--oasis-bright); letter-spacing:.1em; text-transform:uppercase; font-family:var(--font-mono); margin-bottom:.4rem;">Status</div>
+          <div style="display:flex; align-items:center; gap:.5rem;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#4caf50; animation:pulse-dot 2s infinite;"></span>
+            <span style="font-size:.8rem; color:rgba(180,220,180,.7);">All systems operational</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom-row">
+      <span class="footer-copy">© 2025 Ghosn Environmental Platform — Built for a greener planet</span>
+      <div class="footer-badge">
+        <span class="footer-badge-dot"></span>
+        <span>125K+ Trees Planted</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
