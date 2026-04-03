@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Edit Report — Ghosn</title>
+
+<link rel="stylesheet" href="shared.css"/>
+
+<!-- LEAFLET MAP -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+
+/* BACKGROUND */
+body {
+  background: #e9e4d8;
+}
+
+/* PAGE */
+.submit-wrap {
+  max-width: 900px;
+  margin: auto;
+  padding: calc(var(--nav-h) + 2rem) 2rem 4rem;
+}
+
+/* CARD */
+.form-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+
+/* TITLE */
+.submit-title {
+  text-align:center;
+  font-size:2.5rem;
+  margin-bottom:1.5rem;
+  font-family:'Fraunces', serif;
+}
+
+/* FORM */
+.form-group { margin-bottom:1rem; }
+
+label {
+  font-weight:600;
+  margin-bottom:.3rem;
+  display:block;
+}
+
+input, textarea, select {
+  width:100%;
+  padding:.8rem;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+
+/* MAP */
+#map {
+  height: 300px;
+  border-radius: 12px;
+  margin-top: .5rem;
+}
+
+/* BUTTON */
+.submit-btn {
+  width:100%;
+  padding:1rem;
+  border:none;
+  border-radius:10px;
+  background:#2d7a2d;
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.submit-btn:hover { background:#1f5f1f; }
+
+/* IMAGE */
+#preview {
+  width:100%;
+  margin-top:10px;
+  border-radius:10px;
+  display:block;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
+
+  <a href="#hero" class="nav-logo">
+    <img src="images/logoo.png" alt="Ghosn Logo"
+         style="width:107px; height:107px; object-fit:contain; display:block;">
+  </a>
+
+  <ul class="nav-links">
+    <li>
+      <a href="ghusn_home1.html" id="nav-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+    </li>
+    <li>
+      <a href="submit.html" id="nav-report" >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+        Submit Report
+      </a>
+    </li>
+    <li>
+      <a href="search.html" id="nav-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </a>
+    </li>
+    <li>
+      <a href="residentProfile.html" id="nav-profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </a>
+    </li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-nav-signout" style="color: #b7deb7;" onclick="signOut()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sign Out
+    </button>
+  </div>
+</nav>
+
+<br><br><br>
+
+<!-- CONTENT -->
+<main class="submit-wrap">
+
+  <div class="form-card">
+
+    <div class="submit-title">Edit Report</div>
+
+    <form id="reportForm">
+
+      <div class="form-group">
+        <label>Title</label>
+        <input id="titleInput" required>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="descriptionInput" rows="4" required></textarea>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="form-group">
+        <label>Select Location</label>
+
+        <button type="button" id="getLocationBtn" class="submit-btn" style="margin-bottom:.6rem;">
+          Use My Current Location
+        </button>
+
+        <div id="map"></div>
+
+        <input id="locationInput" readonly placeholder="Click on map or use GPS" style="margin-top:.5rem;">
+        <input type="hidden" id="lat">
+        <input type="hidden" id="lng">
+      </div>
+
+      <!-- SEVERITY -->
+      <div class="form-group">
+        <label>Severity</label>
+        <select id="severityInput" required>
+          <option value="">Select</option>
+          <option value="1">1 - Very Low</option>
+          <option value="2">2 - Low</option>
+          <option value="3">3 - Medium</option>
+          <option value="4">4 - High</option>
+          <option value="5">5 - Very High</option>
+        </select>
+      </div>
+
+      <!-- IMAGE -->
+      <div class="form-group">
+        <label>Upload New Image (Optional)</label>
+        <input type="file" id="imageInput" accept="image/*">
+        <img id="preview" alt="Report preview">
+      </div>
+
+      <button class="submit-btn">Save Changes</button>
+
+    </form>
+
+  </div>
+
+</main>
+
+<footer>
+  <canvas class="footer-trees" id="footerTreesCanvas" aria-hidden="true"></canvas>
+
+  <div class="footer-main">
+    <div class="footer-top">
+
+      <div class="footer-brand">
+        <div class="footer-brand-logo">
+          <svg viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 34 C13 28 12 22 14 16" stroke="#6abf69" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 16 C10 14 5 12 2 8" stroke="#4caf50" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 18 C9 17 4 18 1 15" stroke="#4caf50" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 15 C11 11 8 7 9 3" stroke="#4caf50" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 16 C18 14 23 12 26 8" stroke="#81c784" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 18 C19 17 24 18 27 15" stroke="#81c784" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 15 C17 11 20 7 19 3" stroke="#81c784" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 14 C14 10 13 6 14 2" stroke="#a5d6a7" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 34 C11 33 8 34 6 33" stroke="#6abf69" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 34 C17 33 20 34 22 33" stroke="#6abf69" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="footer-brand-name">Ghosn <span>غصن</span></span>
+        </div>
+        <p class="footer-brand-desc">Combining community action, data tools, and environmental science to reverse desertification across the region.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Twitter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+          </a>
+          <a href="#" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="#" aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Navigation</div>
+        <div class="footer-col-links">
+          <a href="#hero">Home</a>
+          <a href="#about">About</a>
+          <a href="#vision">Platform</a>
+          <a href="#restoration">How It Works</a>
+          <a href="#impact">Our Impact</a>
+          <a href="#join">Join</a>
+          <a href="#future">Future Vision</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <div class="footer-col-links">
+          <a href="#">Submit a Report</a>
+          <a href="#">Tree Campaigns</a>
+          <a href="#">Interactive Map</a>
+          <a href="#">Impact Dashboard</a>
+          <a href="#">Community Forum</a>
+          <a href="#">Learning Hub</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-col-links">
+          <a href="#">hello@ghosn.eco</a>
+          <a href="#">Partner With Us</a>
+          <a href="#">Press & Media</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+        </div>
+        <div style="margin-top:1.5rem; padding:1rem 1.2rem; background:rgba(106,191,105,.08); border:1px solid rgba(106,191,105,.15); border-radius:10px;">
+          <div style="font-size:.72rem; color:var(--oasis-bright); letter-spacing:.1em; text-transform:uppercase; font-family:var(--font-mono); margin-bottom:.4rem;">Status</div>
+          <div style="display:flex; align-items:center; gap:.5rem;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#4caf50; animation:pulse-dot 2s infinite;"></span>
+            <span style="font-size:.8rem; color:rgba(180,220,180,.7);">All systems operational</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom-row">
+      <span class="footer-copy">© 2025 Ghosn Environmental Platform — Built for a greener planet</span>
+      <div class="footer-badge">
+        <span class="footer-badge-dot"></span>
+        <span>125K+ Trees Planted</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/* بيانات وهمية للتقرير الحالي */
+const reportData = {
+  title: "Dry area near park",
+  description: "The area needs trees and shade.",
+  severity: "5",
+  lat: 24.774265,
+  lng: 46.738586,
+  image: "images/report1.jpg"
+};
+
+const titleInput = document.getElementById("titleInput");
+const descriptionInput = document.getElementById("descriptionInput");
+const severityInput = document.getElementById("severityInput");
+const latInput = document.getElementById("lat");
+const lngInput = document.getElementById("lng");
+const locationInput = document.getElementById("locationInput");
+const preview = document.getElementById("preview");
+
+titleInput.value = reportData.title;
+descriptionInput.value = reportData.description;
+severityInput.value = reportData.severity;
+latInput.value = reportData.lat;
+lngInput.value = reportData.lng;
+locationInput.value = `Lat: ${reportData.lat.toFixed(4)}, Lng: ${reportData.lng.toFixed(4)}`;
+preview.src = reportData.image;
+
+const map = L.map('map').setView([reportData.lat, reportData.lng], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+let marker = L.marker([reportData.lat, reportData.lng]).addTo(map);
+
+/* CLICK MAP */
+map.on('click', function(e) {
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  latInput.value = lat;
+  lngInput.value = lng;
+  locationInput.value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+
+  if (marker) map.removeLayer(marker);
+  marker = L.marker([lat, lng]).addTo(map);
+});
+
+/* GPS */
+document.getElementById("getLocationBtn").onclick = () => {
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    map.setView([lat, lng], 15);
+
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lng]).addTo(map);
+
+    latInput.value = lat;
+    lngInput.value = lng;
+    locationInput.value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+  });
+};
+
+/* IMAGE PREVIEW */
+document.getElementById("imageInput").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    preview.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* SAVE CHANGES */
+document.getElementById("reportForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (!latInput.value) {
+    alert("Select location 📍");
+    return;
+  }
+
+  const updatedReport = {
+    title: titleInput.value,
+    description: descriptionInput.value,
+    severity: severityInput.value,
+    lat: latInput.value,
+    lng: lngInput.value
+  };
+
+  console.log(updatedReport);
+  alert("Report updated successfully ✅");
+  location.href = "residentProfile.html";
+});
+</script>
+
+<script src="shared.js"></script>
+</body>
+</html>

@@ -256,3 +256,9 @@ function applyRoleNav() {
     profileEl.style.cursor = 'pointer';
   }
 }
+function updateStatus(select) {
+  select.classList.remove("planned", "progress", "completed");
+
+  const value = select.value;
+  select.classList.add(value);
+}
