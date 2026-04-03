@@ -4,7 +4,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
-  initGlobalBirds();
+
+  // ❌ امنع الطيور في صفحة السيرتش
+  if (!document.body.classList.contains("no-birds")) {
+    initGlobalBirds();
+  }
+
   initScrollReveal();
   initFooterCanvas();
 });
