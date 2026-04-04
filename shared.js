@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyRoleNav();   // ← يشتغل أول شي قبل أي شيء آخر
   initNav();
 
   // ❌ امنع الطيور في صفحة السيرتش
@@ -12,18 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initScrollReveal();
   initFooterCanvas();
-  applyRoleNav(); // ← Role-based nav (runs on every page)
 });
 
 // ── Sign Out ──────────────────────────────────
 function signOut() {
-  // TODO: POST /api/auth/logout
+  localStorage.removeItem('userRole');
   window.location.href = 'login.html';
 }
 
 // ── Nav ───────────────────────────────────────
 function initNav() {
-  const nav = document.getElementById('nav');
+  const nav = document.getElementById('mainNav');
   if (!nav) return;
   window.addEventListener('scroll', () => {
     nav.classList.toggle('solid', window.scrollY > 55);
@@ -35,8 +35,101 @@ function toggleNav() {
   if (links) links.classList.toggle('open');
 }
 
+// ══════════════════════════════════════════════
+// Role-based Nav — يشتغل على كل الصفحات
+// ══════════════════════════════════════════════
+function applyRoleNav() {
+  var role = localStorage.getItem('userRole'); // 'resident' | 'volunteer'
+
+  // ── حماية الصفحات ─────────────────────────
+  var page = window.location.pathname.split('/').pop() || 'index.html';
+
+  // صفحات Resident فقط
+  var residentOnly = ['submit.html', 'residentProfile.html'];
+  // صفحات Volunteer فقط
+  var volunteerOnly = ['search.html', 'volunteerProfile.html'];
+
+  if (residentOnly.indexOf(page) !== -1 && role !== 'resident') {
+    // إذا ما عنده role أو Volunteer يحاول يدخل
+    window.location.replace(role === 'volunteer' ? 'ghusn_home1.html' : 'login.html');
+    return;
+  }
+
+  if (volunteerOnly.indexOf(page) !== -1 && role !== 'volunteer') {
+    window.location.replace(role === 'resident' ? 'ghusn_home1.html' : 'login.html');
+    return;
+  }
+
+  // ── Role Badge في الهيدر ───────────────────
+  var navActions = document.querySelector('.nav-actions');
+  if (navActions && role) {
+    var existingBadge = document.getElementById('role-badge');
+    if (!existingBadge) {
+      var badge = document.createElement('span');
+      badge.id = 'role-badge';
+      badge.textContent = role === 'volunteer' ? '🌿 Volunteer' : '🏠 Resident';
+      badge.style.cssText = [
+        'display:inline-flex',
+        'align-items:center',
+        'padding:.28rem .75rem',
+        'border-radius:999px',
+        'font-size:.75rem',
+        'font-weight:700',
+        'letter-spacing:.04em',
+        'background:' + (role === 'volunteer' ? 'rgba(93,158,65,.15)' : 'rgba(59,130,246,.13)'),
+        'color:' + (role === 'volunteer' ? 'var(--g300,#6abf69)' : '#60a5fa'),
+        'border:1px solid ' + (role === 'volunteer' ? 'rgba(93,158,65,.3)' : 'rgba(96,165,250,.3)'),
+        'margin-right:.5rem',
+        'white-space:nowrap'
+      ].join(';');
+      navActions.insertBefore(badge, navActions.firstChild);
+    }
+  }
+
+  // ── إخفاء/إظهار روابط الهيدر ──────────────
+  var reportEl = document.getElementById('nav-report');
+  var searchEl = document.getElementById('nav-search');
+  var profileEl = document.getElementById('nav-profile');
+
+  // Volunteer → يشوف Search, Home, Profile فقط (يخفي Submit Report)
+  if (role === 'volunteer') {
+    if (reportEl && reportEl.parentElement) {
+      reportEl.parentElement.style.display = 'none';
+    }
+  }
+
+  // Resident → يشوف Submit Report, Home, Profile فقط (يخفي Search)
+  if (role === 'resident') {
+    if (searchEl && searchEl.parentElement) {
+      searchEl.parentElement.style.display = 'none';
+    }
+  }
+
+  // إذا ما في role → اخفي كل شيء ما عدا Home
+  if (!role) {
+    if (reportEl && reportEl.parentElement) reportEl.parentElement.style.display = 'none';
+    if (searchEl && searchEl.parentElement) searchEl.parentElement.style.display = 'none';
+  }
+
+  // ── Profile → وجّه لصفحة البروفايل الصحيحة ──
+  if (profileEl) {
+    profileEl.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (role === 'volunteer') {
+        window.location.href = 'volunteerProfile.html';
+      } else if (role === 'resident') {
+        window.location.href = 'residentProfile.html';
+      } else {
+        window.location.href = 'login.html';
+      }
+    });
+    profileEl.style.cursor = 'pointer';
+    profileEl.removeAttribute('href'); // امنع الانتقال المباشر
+  }
+}
+
+
 // ── Global Birds ──────────────────────────────
-// 28 birds across full page height, scroll-aware
 function initGlobalBirds() {
   const canvas = document.createElement('canvas');
   canvas.id = 'birds-canvas';
@@ -114,7 +207,6 @@ function initScrollReveal() {
 }
 
 // ── Footer Sky Canvas ─────────────────────────
-// Stars + moon + silhouette palm
 function initFooterCanvas() {
   const canvas = document.getElementById('footer-canvas');
   if (!canvas) return;
@@ -130,7 +222,6 @@ function initFooterCanvas() {
 
   const W = () => canvas.width, H = () => canvas.height;
 
-  // Stars
   const stars = Array.from({ length: 55 }, () => ({
     x: Math.random(), y: Math.random() * .75,
     r: Math.random() * 1.6 + .3,
@@ -143,14 +234,12 @@ function initFooterCanvas() {
     const w = W(), h = H();
     ctx.clearRect(0, 0, w, h);
 
-    // Dark sky gradient
     const sky = ctx.createLinearGradient(0, 0, 0, h);
     sky.addColorStop(0, '#060f06');
     sky.addColorStop(1, '#0a1a0a');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    // Stars with gentle twinkle
     stars.forEach(s => {
       const twinkle = s.op + Math.sin(fr * .028 + s.twinkleOffset) * .12;
       ctx.fillStyle = `rgba(200,240,175,${twinkle})`;
@@ -159,7 +248,6 @@ function initFooterCanvas() {
       ctx.fill();
     });
 
-    // Moon — soft crescent
     const mx = w * .85, my = h * .28, mr = h * .22;
     const moonGlow = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.5);
     moonGlow.addColorStop(0, 'rgba(220,255,200,.18)');
@@ -167,14 +255,11 @@ function initFooterCanvas() {
     ctx.fillStyle = moonGlow;
     ctx.beginPath(); ctx.arc(mx, my, mr * 2.5, 0, Math.PI * 2); ctx.fill();
 
-    // Moon disc
     ctx.fillStyle = 'rgba(228,250,205,.92)';
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
-    // Crescent shadow
     ctx.fillStyle = '#060f06';
     ctx.beginPath(); ctx.arc(mx + mr * .38, my - mr * .08, mr * .88, 0, Math.PI * 2); ctx.fill();
 
-    // Palm silhouette — left of moon
     const px = w * .72, py = h;
     const ph = h * .88;
     const ptx = px - ph * .12, pty = py - ph;
@@ -187,7 +272,6 @@ function initFooterCanvas() {
     ctx.quadraticCurveTo(px - ph * .06, py - ph * .5, ptx, pty);
     ctx.stroke();
 
-    // Fronds
     const frondAngles = [-.7, -.35, 0, .35, .7, 1.0, -.05];
     frondAngles.forEach((angle, fi) => {
       const sw = Math.sin(fr * .018 + fi * .6) * .06;
@@ -206,11 +290,9 @@ function initFooterCanvas() {
       ctx.stroke();
     });
 
-    // Ground line
     ctx.fillStyle = '#0a1a0a';
     ctx.fillRect(0, h * .82, w, h * .18);
 
-    // Horizon glow
     const hg = ctx.createLinearGradient(0, h * .75, 0, h * .85);
     hg.addColorStop(0, 'rgba(93,158,65,.12)');
     hg.addColorStop(1, 'rgba(93,158,65,0)');
@@ -222,43 +304,8 @@ function initFooterCanvas() {
   animate();
 }
 
-// ══════════════════════════════════════════════
-// Role-based Nav — runs on every page
-// ══════════════════════════════════════════════
-function applyRoleNav() {
-  var role = localStorage.getItem('userRole'); // 'resident' | 'volunteer'
-
-  // Volunteer → إخفاء Submit Report
-  if (role === 'volunteer') {
-    var reportEl = document.getElementById('nav-report');
-    if (reportEl && reportEl.parentElement) {
-      reportEl.parentElement.style.display = 'none';
-    }
-  }
-
-  // Resident → إخفاء Search
-  if (role === 'resident') {
-    var searchEl = document.getElementById('nav-search');
-    if (searchEl && searchEl.parentElement) {
-      searchEl.parentElement.style.display = 'none';
-    }
-  }
-
-  // Profile → توجيه حسب الـ role
-  var profileEl = document.getElementById('nav-profile');
-  if (profileEl) {
-    profileEl.addEventListener('click', function(e) {
-      e.preventDefault();
-      window.location.href = (role === 'volunteer')
-        ? 'volunteerProfile.html'
-        : 'residentProfile.html';
-    });
-    profileEl.style.cursor = 'pointer';
-  }
-}
 function updateStatus(select) {
   select.classList.remove("planned", "progress", "completed");
-
   const value = select.value;
   select.classList.add(value);
 }

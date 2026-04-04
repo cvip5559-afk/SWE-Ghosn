@@ -478,6 +478,11 @@ function handleSignUp(){
 
   // TODO: POST /api/auth/register { firstName:fn, lastName:ln, email:em, password:pw, role:selectedRole }
   console.log('Register:', fn, ln, em, 'Role:', selectedRole);
+
+  // ✅ حفظ الـ role في localStorage
+  localStorage.setItem('userRole', selectedRole);
+
+  // توجيه المستخدم حسب نوعه
   window.location.href = 'ghusn_home1.html';
 }
 </script>

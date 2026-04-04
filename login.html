@@ -439,6 +439,15 @@ function handleLogin() {
 
   // 4. TODO: POST /api/auth/login { email, password } — connect to your database here
   console.log('Login attempt:', email);
+
+  // ✅ للتطوير: إذا ما في role محفوظ، اطلب منه يختار
+  if (!localStorage.getItem('userRole')) {
+    // إذا مسجّل كـ volunteer حسب الإيميل (مثال مؤقت للتطوير)
+    // في الواقع يجي الـ role من الـ API response
+    var defaultRole = email.includes('vol') ? 'volunteer' : 'resident';
+    localStorage.setItem('userRole', defaultRole);
+  }
+
   window.location.href = 'ghusn_home1.html';
 }
 
@@ -460,4 +469,5 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
 
