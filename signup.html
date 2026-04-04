@@ -122,11 +122,6 @@
     .pw-strength { height:3px; border-radius:2px; background:var(--n100); overflow:hidden; margin-top:.28rem; }
     .pw-bar { height:100%; width:0; border-radius:2px; transition:width .4s ease, background .4s ease; }
 
-    .terms-row { display:flex; align-items:flex-start; gap:.65rem; margin:1rem 0 1.5rem; }
-    .terms-row input { margin-top:3px; accent-color:var(--g300); flex-shrink:0; }
-    .terms-row label { font-size:.82rem; color:var(--n500); line-height:1.5; }
-    .terms-row a { color:var(--g400); font-weight:600; }
-
     .btn-auth {
       width:100%; padding:.95rem; border:none; border-radius:var(--r-sm);
       background:linear-gradient(135deg,var(--g300),var(--g500));
@@ -286,11 +281,6 @@
   <div class="auth-form-side">
     <div class="auth-form-wrap">
 
-      <a href="index.html" class="auth-back">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to Home
-      </a>
-
       <h1 class="auth-form-title">Create Account</h1>
       <p class="auth-form-sub">Join thousands of environmental volunteers on غصن.</p>
 
@@ -326,63 +316,56 @@
       <!-- Form body (locked until role selected) -->
       <div class="form-body locked" id="form-body">
 
-      <div class="form-row-2">
-        <div class="fg">
-          <label for="fn">First Name</label>
-          <div class="input-wrap">
-            <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-            <input type="text" id="fn" placeholder="Ahmed" autocomplete="given-name"/>
+        <div class="form-row-2">
+          <div class="fg">
+            <label for="fn">First Name</label>
+            <div class="input-wrap">
+              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+              <input type="text" id="fn" placeholder="Ahmed" autocomplete="given-name"/>
+            </div>
+          </div>
+          <div class="fg">
+            <label for="ln">Last Name</label>
+            <div class="input-wrap">
+              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+              <input type="text" id="ln" placeholder="Al-Rashidi" autocomplete="family-name"/>
+            </div>
           </div>
         </div>
+
         <div class="fg">
-          <label for="ln">Last Name</label>
+          <label for="email">Email Address</label>
           <div class="input-wrap">
-            <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-            <input type="text" id="ln" placeholder="Al-Rashidi" autocomplete="family-name"/>
+            <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input type="email" id="email" placeholder="your@email.com" autocomplete="email"/>
           </div>
         </div>
-      </div>
 
-      <div class="fg">
-        <label for="email">Email Address</label>
-        <div class="input-wrap">
-          <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
-          <input type="email" id="email" placeholder="your@email.com" autocomplete="email"/>
+        <div class="fg">
+          <label for="pw">Password</label>
+          <div class="input-wrap">
+            <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input type="password" id="pw" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password"/>
+            <span onclick="togglePw('pw', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+          </div>
+          <div class="pw-hint"><span id="pw-label">Password strength</span><strong id="pw-text"></strong></div>
+          <div class="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
         </div>
-      </div>
 
-      
-
-      <div class="fg">
-        <label for="pw">Password</label>
-        <div class="input-wrap">
-          <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <input type="password" id="pw" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password"/>
-          <span onclick="togglePw('pw', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </span>
+        <div class="fg">
+          <label for="pwc">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input type="password" id="pwc" placeholder="Repeat your password" autocomplete="new-password"/>
+            <span onclick="togglePw('pwc', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+          </div>
         </div>
-        <div class="pw-hint"><span id="pw-label">Password strength</span><strong id="pw-text"></strong></div>
-        <div class="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
-      </div>
 
-      <div class="fg">
-        <label for="pwc">Confirm Password</label>
-        <div class="input-wrap">
-          <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <input type="password" id="pwc" placeholder="Repeat your password" autocomplete="new-password"/>
-          <span onclick="togglePw('pwc', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </span>
-        </div>
-      </div>
-
-      <div class="terms-row">
-        <input type="checkbox" id="agree"/>
-        <label for="agree">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I understand this is a university environmental research platform.</label>
-      </div>
-
-      <button class="btn-auth" onclick="handleSignUp()">Create Free Account</button>
+        <button class="btn-auth" onclick="handleSignUp()">Create Free Account</button>
 
       </div><!-- /form-body -->
 
@@ -434,7 +417,6 @@
   animate();
 })();
 
-
 // Toggle password visibility
 function togglePw(id, icon) {
   const input = document.getElementById(id);
@@ -442,6 +424,7 @@ function togglePw(id, icon) {
   input.type = isText ? 'password' : 'text';
   icon.style.opacity = isText ? '1' : '0.4';
 }
+
 // Password strength checker
 const PW_LEVELS = ['','Weak','Fair','Good','Strong'];
 const PW_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e'];
@@ -462,28 +445,25 @@ let selectedRole = '';
 function selectRole(role) {
   selectedRole = role;
   document.getElementById('role').value = role;
-
   document.getElementById('role-resident').classList.toggle('active', role === 'resident');
   document.getElementById('role-volunteer').classList.toggle('active', role === 'volunteer');
-
-  // Unlock form
   document.getElementById('form-body').classList.remove('locked');
-
-  // Hide role warning if shown
   document.getElementById('role-warning').classList.remove('show');
 }
 
 // Sign up handler
 function handleSignUp(){
-  const fn=document.getElementById('fn')?.value.trim();
-  const ln=document.getElementById('ln')?.value.trim();
-  const em=document.getElementById('email')?.value.trim();
-  const pw=document.getElementById('pw')?.value;
-  const pwc=document.getElementById('pwc')?.value;
-  const ag=document.getElementById('agree')?.checked;
-  const err=document.getElementById('signup-error');
+  const fn  = document.getElementById('fn')?.value.trim();
+  const ln  = document.getElementById('ln')?.value.trim();
+  const em  = document.getElementById('email')?.value.trim();
+  const pw  = document.getElementById('pw')?.value;
+  const pwc = document.getElementById('pwc')?.value;
+  const err = document.getElementById('signup-error');
 
-  const show=(msg)=>{ if(err){err.textContent=msg;err.classList.add('show');} };
+  const show = (msg) => { if(err){ err.textContent = msg; err.classList.add('show'); } };
+
+  // Clear previous error
+  if(err) err.classList.remove('show');
 
   // Role check
   if(!selectedRole){
@@ -492,16 +472,11 @@ function handleSignUp(){
     return;
   }
 
-  if(!fn||!ln||!em||!pw||!pwc){ show('Please fill in all required fields.'); return; }
-  if(pw.length<8){ show('Password must be at least 8 characters.'); return; }
-  if(pw!==pwc){ show('Passwords do not match.'); return; }
-  if(!ag){ show('Please agree to the Terms of Service.'); return; }
-  if(err) err.classList.remove('show');
+  if(!fn || !ln || !em || !pw || !pwc){ show('Please fill in all required fields.'); return; }
+  if(pw.length < 8){ show('Password must be at least 8 characters.'); return; }
+  if(pw !== pwc){ show('Passwords do not match.'); return; }
 
-  // Save role to localStorage
-  localStorage.setItem('userRole', selectedRole);
-
-  // TODO: POST /api/auth/register { firstName:fn, lastName:ln, email:em, password:pw }
+  // TODO: POST /api/auth/register { firstName:fn, lastName:ln, email:em, password:pw, role:selectedRole }
   console.log('Register:', fn, ln, em, 'Role:', selectedRole);
   window.location.href = 'ghusn_home1.html';
 }

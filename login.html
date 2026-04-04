@@ -235,11 +235,6 @@
   <div class="auth-form-side">
     <div class="auth-form-wrap">
 
-      <a href="index.html" class="auth-back">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to Home
-      </a>
-
       <h1 class="auth-form-title">Welcome back</h1>
       <p class="auth-form-sub">Sign in to your غصن account to continue.</p>
 
@@ -262,11 +257,6 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </span>
         </div>
-      </div>
-
-      <div class="input-row">
-        <label><input type="checkbox" id="remember" style="accent-color:var(--g300)"/> Remember me</label>
-        <a href="#">Forgot password?</a>
       </div>
 
       <button class="btn-auth" onclick="handleLogin()">Sign In</button>
@@ -337,19 +327,7 @@
   animate();
 })();
 
-// ── Login handler ─────────────────────────────
-function handleLogin() {
-  const email = document.getElementById('email')?.value.trim();
-  const pass  = document.getElementById('password')?.value;
-  const err   = document.getElementById('login-error');
-
-  if (!email || !pass) {
-    if (err) { err.textContent = 'Please enter your email and password.'; err.classList.add('show'); }
-    return;
-  }
-  if (err) err.classList.remove('show');
-
-  // Toggle password visibility
+// ── Toggle password visibility ────────────────
 function togglePw(id, icon) {
   const input = document.getElementById(id);
   const isText = input.type === 'text';
@@ -357,16 +335,129 @@ function togglePw(id, icon) {
   icon.style.opacity = isText ? '1' : '0.4';
 }
 
-// TODO: POST /api/auth/login { email, password }
-  // On success → store token → redirect
+// ── Inline error helpers ──────────────────────
+function getOrCreateInlineError(inputId) {
+  const existingError = document.getElementById('err-' + inputId);
+  if (existingError) return existingError;
+
+  const input = document.getElementById(inputId);
+  const errorEl = document.createElement('p');
+  errorEl.id = 'err-' + inputId;
+  errorEl.style.cssText = `
+    margin: .35rem 0 0 .1rem;
+    font-size: .78rem;
+    font-weight: 600;
+    color: #b91c1c;
+    display: none;
+  `;
+  input.closest('.input-wrap').insertAdjacentElement('afterend', errorEl);
+  return errorEl;
+}
+
+function showInlineError(inputId, message) {
+  const errorEl = getOrCreateInlineError(inputId);
+  const input   = document.getElementById(inputId);
+  errorEl.textContent = message;
+  errorEl.style.display = 'block';
+  input.style.borderColor = '#f87171';
+  input.style.boxShadow   = '0 0 0 3px rgba(239,68,68,.13)';
+}
+
+function clearInlineError(inputId) {
+  const errorEl = document.getElementById('err-' + inputId);
+  const input   = document.getElementById(inputId);
+  if (errorEl) errorEl.style.display = 'none';
+  if (input) {
+    input.style.borderColor = '';
+    input.style.boxShadow   = '';
+  }
+}
+
+function clearAllErrors() {
+  clearInlineError('email');
+  clearInlineError('password');
+  const banner = document.getElementById('login-error');
+  if (banner) banner.classList.remove('show');
+}
+
+// ── Validators ───────────────────────────────
+function validateEmail(email) {
+  if (!email) return 'Email address is required.';
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return 'Invalid email format (e.g. example@mail.com).';
+
+  return null; // valid
+}
+
+function validatePassword(password) {
+  if (!password) return 'Password cannot be empty.';
+
+  // Arabic Unicode ranges
+  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  if (arabicRegex.test(password)) return 'Password must not contain Arabic characters.';
+
+  // No spaces allowed
+  if (/\s/.test(password)) return 'Password must not contain spaces.';
+
+  // Only printable ASCII characters allowed (codes 33–126)
+  const invalidCharsRegex = /[^\x21-\x7E]/;
+  if (invalidCharsRegex.test(password)) return 'Password contains invalid characters.';
+
+  return null; // valid
+}
+
+// ── Main login handler ────────────────────────
+function handleLogin() {
+  const emailInput    = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+
+  const email    = emailInput?.value.trim() ?? '';
+  const password = passwordInput?.value ?? '';
+
+  // 1. Clear all previous errors
+  clearAllErrors();
+
+  // 2. Run field-level validation only
+  const emailError    = validateEmail(email);
+  const passwordError = validatePassword(password);
+
+  let hasError = false;
+
+  if (emailError) {
+    showInlineError('email', emailError);
+    hasError = true;
+  }
+
+  if (passwordError) {
+    showInlineError('password', passwordError);
+    hasError = true;
+  }
+
+  // 3. Stop if validation failed
+  if (hasError) return;
+
+  // 4. TODO: POST /api/auth/login { email, password } — connect to your database here
   console.log('Login attempt:', email);
   window.location.href = 'ghusn_home1.html';
 }
 
-// Enter key support
+// ── Clear field error on user input ──────────
+document.getElementById('email')?.addEventListener('input', () => {
+  clearInlineError('email');
+  document.getElementById('login-error')?.classList.remove('show');
+});
+
+document.getElementById('password')?.addEventListener('input', () => {
+  clearInlineError('password');
+  document.getElementById('login-error')?.classList.remove('show');
+});
+
+// ── Enter key support ─────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleLogin();
 });
 </script>
 </body>
 </html>
+
