@@ -476,14 +476,21 @@ function handleSignUp(){
   if(pw.length < 8){ show('Password must be at least 8 characters.'); return; }
   if(pw !== pwc){ show('Passwords do not match.'); return; }
 
-  // TODO: POST /api/auth/register { firstName:fn, lastName:ln, email:em, password:pw, role:selectedRole }
-  console.log('Register:', fn, ln, em, 'Role:', selectedRole);
-
-  // ✅ حفظ الـ role في localStorage
+  // ✅ حفظ بيانات المستخدم في localStorage
+  const userData = {
+    firstName: fn,
+    lastName: ln,
+    email: em,
+    password: pw,
+    role: selectedRole
+  };
+  localStorage.setItem('ghosn_user', JSON.stringify(userData));
   localStorage.setItem('userRole', selectedRole);
 
-  // توجيه المستخدم حسب نوعه
-  window.location.href = 'ghusn_home1.html';
+  console.log('Register:', fn, ln, em, 'Role:', selectedRole);
+
+  // ✅ تحويل المستخدم إلى صفحة Login بعد إنشاء الحساب
+  window.location.href = 'login.html';
 }
 </script>
 </body>

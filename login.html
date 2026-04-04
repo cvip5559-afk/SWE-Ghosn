@@ -437,17 +437,28 @@ function handleLogin() {
   // 3. Stop if validation failed
   if (hasError) return;
 
-  // 4. TODO: POST /api/auth/login { email, password } — connect to your database here
-  console.log('Login attempt:', email);
-
-  // ✅ للتطوير: إذا ما في role محفوظ، اطلب منه يختار
-  if (!localStorage.getItem('userRole')) {
-    // إذا مسجّل كـ volunteer حسب الإيميل (مثال مؤقت للتطوير)
-    // في الواقع يجي الـ role من الـ API response
-    var defaultRole = email.includes('vol') ? 'volunteer' : 'resident';
-    localStorage.setItem('userRole', defaultRole);
+  // 4. ✅ التحقق من البيانات في localStorage
+  const storedRaw = localStorage.getItem('ghosn_user');
+  if (!storedRaw) {
+    const banner = document.getElementById('login-error');
+    if (banner) { banner.textContent = 'No account found. Please sign up first.'; banner.classList.add('show'); }
+    return;
   }
 
+  let storedUser;
+  try { storedUser = JSON.parse(storedRaw); } catch(e) { storedUser = null; }
+
+  if (!storedUser || storedUser.email !== email || storedUser.password !== password) {
+    const banner = document.getElementById('login-error');
+    if (banner) { banner.textContent = 'Invalid email or password. Please try again.'; banner.classList.add('show'); }
+    showInlineError('email', ' ');
+    showInlineError('password', ' ');
+    return;
+  }
+
+  // 5. ✅ بيانات صحيحة — حفظ الـ role وتحويل إلى الصفحة الرئيسية
+  localStorage.setItem('userRole', storedUser.role);
+  console.log('Login successful:', email, '| Role:', storedUser.role);
   window.location.href = 'ghusn_home1.html';
 }
 
