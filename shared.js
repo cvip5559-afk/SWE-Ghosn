@@ -17,8 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Sign Out ──────────────────────────────────
 function signOut() {
+  // مسح الـ localStorage (legacy)
   localStorage.removeItem('userRole');
-  window.location.href = 'login.html';
+  localStorage.removeItem('ghosn_session');
+  // logout.php يدمر الـ PHP Session ويعيد التوجيه لـ login.php
+  window.location.href = 'logout.php';
 }
 
 // ── Nav ───────────────────────────────────────
@@ -38,8 +41,22 @@ function toggleNav() {
 // ══════════════════════════════════════════════
 // Role-based Nav — يشتغل على كل الصفحات
 // ══════════════════════════════════════════════
+
+// ── Helper: قراءة cookie بالاسم ──────────────
+function getCookie(name) {
+  var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([\\$\*\+\.\?\[\^\{\|\(\)\]])/g, '\\') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function applyRoleNav() {
-  var role = localStorage.getItem('userRole'); // 'resident' | 'volunteer'
+  // أولوية: cookie من PHP Session، ثم localStorage كـ fallback
+  var cookieRole = getCookie('ghosn_role');
+  var role = cookieRole || localStorage.getItem('userRole'); // 'resident' | 'volunteer'
+
+  // مزامنة localStorage مع الـ cookie
+  if (cookieRole) {
+    localStorage.setItem('userRole', cookieRole);
+  }
 
   // ── حماية الصفحات ─────────────────────────
   var page = window.location.pathname.split('/').pop() || 'index.html';

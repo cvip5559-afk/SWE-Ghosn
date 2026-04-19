@@ -68,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['email']     = $user['email'];
                 $_SESSION['role']      = $role ?? 'unknown';
 
+                // ── Set role cookie for JS ──────
+                // قابل للقراءة من JavaScript لأن httponly=false
+                setcookie('ghosn_role', $role ?? 'unknown', 0, '/');
+
                 $conn->close();
 
                 // ── Redirect by role ───────────
@@ -386,4 +390,3 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
 </script>
 </body>
 </html>
-
