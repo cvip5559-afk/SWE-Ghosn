@@ -2627,6 +2627,14 @@ window.addEventListener('scroll', () => {
 
 </script>
 
+<script>
+// ✅ إخبار shared.js إن PHP تتولى الـ nav في هذه الصفحة
+// (لا حاجة لـ applyRoleNav تخفي/تظهر عناصر هنا)
+window.GHOSN_PHP_NAV = true;
+
+// تمرير الـ role للـ JS من PHP Session (للـ badge فقط)
+window.GHOSN_ROLE = "<?php echo htmlspecialchars($role); ?>";
+</script>
 <script src="shared.js"></script>
 </body>
 </html>

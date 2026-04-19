@@ -49,13 +49,43 @@ function getCookie(name) {
 }
 
 function applyRoleNav() {
-  // أولوية: cookie من PHP Session، ثم localStorage كـ fallback
+  // أولوية 1: متغير PHP مباشرة (في صفحات PHP)
+  // أولوية 2: cookie من PHP Session
+  // أولوية 3: localStorage كـ fallback
   var cookieRole = getCookie('ghosn_role');
-  var role = cookieRole || localStorage.getItem('userRole'); // 'resident' | 'volunteer'
+  var role = (window.GHOSN_ROLE && window.GHOSN_ROLE !== 'unknown' ? window.GHOSN_ROLE : null)
+             || cookieRole
+             || localStorage.getItem('userRole'); // 'resident' | 'volunteer'
 
   // مزامنة localStorage مع الـ cookie
   if (cookieRole) {
     localStorage.setItem('userRole', cookieRole);
+  }
+
+  // ── إذا PHP تتولى الـ nav (مثل ghusn_home1.php) ─
+  // تخطّى إخفاء/إظهار العناصر لأن PHP أنشأتها صح من الأساس
+  if (window.GHOSN_PHP_NAV) {
+    // فقط أضف الـ badge واحمي الصفحات الأخرى
+    var navActions = document.querySelector('.nav-actions');
+    if (navActions && role) {
+      var existingBadge = document.getElementById('role-badge');
+      if (!existingBadge) {
+        var badge = document.createElement('span');
+        badge.id = 'role-badge';
+        badge.textContent = role === 'volunteer' ? '🌿 Volunteer' : '🏠 Resident';
+        badge.style.cssText = [
+          'display:inline-flex', 'align-items:center', 'padding:.28rem .75rem',
+          'border-radius:999px', 'font-size:.75rem', 'font-weight:700',
+          'letter-spacing:.04em',
+          'background:' + (role === 'volunteer' ? 'rgba(93,158,65,.15)' : 'rgba(59,130,246,.13)'),
+          'color:' + (role === 'volunteer' ? 'var(--g300,#6abf69)' : '#60a5fa'),
+          'border:1px solid ' + (role === 'volunteer' ? 'rgba(93,158,65,.3)' : 'rgba(96,165,250,.3)'),
+          'margin-right:.5rem', 'white-space:nowrap'
+        ].join(';');
+        navActions.insertBefore(badge, navActions.firstChild);
+      }
+    }
+    return; // ← توقف هنا، PHP تولّت الباقي
   }
 
   // ── حماية الصفحات ─────────────────────────
@@ -67,13 +97,12 @@ function applyRoleNav() {
   var volunteerOnly = ['search.html', 'volunteerProfile.html'];
 
   if (residentOnly.indexOf(page) !== -1 && role !== 'resident') {
-    // إذا ما عنده role أو Volunteer يحاول يدخل
-    window.location.replace(role === 'volunteer' ? 'ghusn_home1.html' : 'login.html');
+    window.location.replace(role === 'volunteer' ? 'ghusn_home1.php' : 'login.php');
     return;
   }
 
   if (volunteerOnly.indexOf(page) !== -1 && role !== 'volunteer') {
-    window.location.replace(role === 'resident' ? 'ghusn_home1.html' : 'login.html');
+    window.location.replace(role === 'resident' ? 'ghusn_home1.php' : 'login.php');
     return;
   }
 
@@ -137,7 +166,7 @@ function applyRoleNav() {
       } else if (role === 'resident') {
         window.location.href = 'residentProfile.html';
       } else {
-        window.location.href = 'login.html';
+        window.location.href = 'login.php';
       }
     });
     profileEl.style.cursor = 'pointer';

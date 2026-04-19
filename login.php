@@ -75,11 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conn->close();
 
                 // ── Redirect by role ───────────
-                if ($role === 'volunteer') {
-                    header('Location: volunteerProfile.html');
-                } else {
-                    header('Location: ghusn_home1.php');
-                }
+                // كلا النوعين يروحون لـ Home أولاً، والهيدر يتغير حسب الـ role
+                header('Location: ghusn_home1.php');
                 exit;
             }
         }
