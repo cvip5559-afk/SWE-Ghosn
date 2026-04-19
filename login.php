@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($role === 'volunteer') {
                     header('Location: volunteerProfile.html');
                 } else {
-                    header('Location: ghusn_home1.html');
+                    header('Location: ghusn_home1.php');
                 }
                 exit;
             }

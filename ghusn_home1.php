@@ -1,3 +1,22 @@
+<?php
+// ══════════════════════════════════════════════
+// home.php — GHOSN Platform
+// ══════════════════════════════════════════════
+session_start();
+
+// حماية الصفحة — إذا ما في session يرجع لـ login
+if (empty($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$role     = $_SESSION['role']     ?? 'unknown';
+$userName = $_SESSION['user_name'] ?? 'User';
+$userId   = $_SESSION['user_id']   ?? '';
+
+// رابط البروفايل حسب الـ role
+$profileHref = ($role === 'volunteer') ? 'volunteerProfile.html' : 'residentProfile.html';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -584,25 +603,28 @@ section { position: relative; }
 
   <ul class="nav-links">
     <li>
-      <a href="ghusn_home1.html" id="nav-home">
+      <a href="ghusn_home1.php" id="nav-home">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Home
       </a>
     </li>
+    <?php if ($role === 'resident'): ?>
     <li>
       <a href="submit.html" id="nav-report">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
         Submit Report
       </a>
     </li>
+    <?php elseif ($role === 'volunteer'): ?>
     <li>
       <a href="search.html" id="nav-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Search
       </a>
     </li>
+    <?php endif; ?>
     <li>
-      <a href="residentProfile.html" id="nav-profile">
+      <a href="<?php echo $profileHref; ?>" id="nav-profile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Profile
       </a>
