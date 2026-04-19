@@ -1,3 +1,93 @@
+<?php
+// ══════════════════════════════════════════════
+// signup.php — GHOSN Platform
+// ══════════════════════════════════════════════
+
+session_start();
+require_once 'includes/connection.php';
+
+$error   = '';
+$success = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $firstName = trim($_POST['first_name'] ?? '');
+    $lastName  = trim($_POST['last_name']  ?? '');
+    $email     = trim($_POST['email']      ?? '');
+    $password  = $_POST['password']        ?? '';
+    $confirm   = $_POST['confirm_password'] ?? '';
+    $role      = strtolower(trim($_POST['role'] ?? ''));
+
+    // ── Validation ────────────────────────────
+    if (!$firstName || !$lastName || !$email || !$password || !$confirm || !$role) {
+        $error = 'Please fill in all required fields.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Invalid email address.';
+    } elseif (strlen($password) < 8) {
+        $error = 'Password must be at least 8 characters.';
+    } elseif ($password !== $confirm) {
+        $error = 'Passwords do not match.';
+    } elseif (!in_array($role, ['resident', 'volunteer'])) {
+        $error = 'Please select a valid role.';
+    } else {
+        // ── Check duplicate email ──────────────
+        $chk = $conn->prepare('SELECT User_ID FROM user WHERE email = ?');
+        $chk->bind_param('s', $email);
+        $chk->execute();
+        $chk->store_result();
+
+        if ($chk->num_rows > 0) {
+            $error = 'An account with this email already exists.';
+        }
+        $chk->close();
+    }
+
+    // ── Insert into DB ────────────────────────
+    if (!$error) {
+        $userId         = 'USR_' . time() . '_' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
+        $userName       = $firstName . ' ' . $lastName;
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $phone          = '';
+
+        $conn->begin_transaction();
+        try {
+            // 1. Insert into `user`
+            $stmtUser = $conn->prepare(
+                'INSERT INTO user (User_ID, User_name, email, phone, password) VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmtUser->bind_param('sssss', $userId, $userName, $email, $phone, $hashedPassword);
+            $stmtUser->execute();
+            $stmtUser->close();
+
+            // 2. Insert into role table
+            if ($role === 'resident') {
+                $neighbourhood = '';
+                $stmt2 = $conn->prepare('INSERT INTO resident (resident_ID, ResidentNeighbourhood) VALUES (?, ?)');
+                $stmt2->bind_param('ss', $userId, $neighbourhood);
+            } else {
+                $dateJoined = date('Y-m-d');
+                $stmt2 = $conn->prepare('INSERT INTO volunteer (Volunteer_ID, DateOfJoining) VALUES (?, ?)');
+                $stmt2->bind_param('ss', $userId, $dateJoined);
+            }
+            $stmt2->execute();
+            $stmt2->close();
+
+            $conn->commit();
+            $success = true;
+
+            // ── Redirect to login after success ──
+            header('Location: login.php?registered=1');
+            exit;
+
+        } catch (Exception $e) {
+            $conn->rollback();
+            $error = 'Registration failed. Please try again.';
+        }
+    }
+
+    $conn->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -168,11 +258,7 @@
       opacity: 0;
       transition: opacity .3s ease;
     }
-    .role-card:hover {
-      border-color: var(--g300);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(93,158,65,.1);
-    }
+    .role-card:hover { border-color: var(--g300); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(93,158,65,.1); }
     .role-card:hover::before { opacity: 1; }
     .role-card.active {
       border-color: var(--g300);
@@ -182,27 +268,19 @@
     }
     .role-card.active::before { opacity: 1; }
     .role-icon {
-      width: 44px; height: 44px;
-      border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       background: var(--n50, #f8fafc);
       display: flex; align-items: center; justify-content: center;
       transition: background .3s ease, transform .3s ease;
     }
-    .role-card:hover .role-icon,
-    .role-card.active .role-icon {
-      background: rgba(93,158,65,.12);
-      transform: scale(1.08);
-    }
+    .role-card:hover .role-icon, .role-card.active .role-icon { background: rgba(93,158,65,.12); transform: scale(1.08); }
     .role-icon svg { width: 22px; height: 22px; stroke: var(--n400); fill: none; stroke-width: 1.8; transition: stroke .3s ease; }
-    .role-card.active .role-icon svg,
-    .role-card:hover .role-icon svg { stroke: var(--g400); }
+    .role-card.active .role-icon svg, .role-card:hover .role-icon svg { stroke: var(--g400); }
     .role-label { font-size: .82rem; font-weight: 700; color: var(--n600); letter-spacing: .01em; transition: color .3s ease; text-align: center; }
     .role-card.active .role-label { color: var(--g500); }
     .role-check {
       position: absolute; top: .5rem; right: .5rem;
-      width: 18px; height: 18px;
-      background: var(--g300);
-      border-radius: 50%;
+      width: 18px; height: 18px; background: var(--g300); border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       opacity: 0; transform: scale(.5);
       transition: opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
@@ -210,14 +288,11 @@
     .role-card.active .role-check { opacity: 1; transform: scale(1); }
     .role-check svg { width: 10px; height: 10px; stroke: white; fill: none; stroke-width: 3; }
 
-    /* Form lock overlay */
     .form-body { transition: opacity .35s ease; }
     .form-body.locked { opacity: .45; pointer-events: none; filter: blur(.5px); }
 
-    /* Role warning */
     .role-warning {
-      display: none;
-      align-items: center; gap: .5rem;
+      display: none; align-items: center; gap: .5rem;
       background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
       border-radius: var(--r-sm); padding: .65rem .9rem;
       font-size: .82rem; margin-bottom: 1rem;
@@ -225,16 +300,9 @@
     }
     .role-warning.show { display: flex; }
     .role-warning svg { width: 15px; height: 15px; stroke: #d97706; fill: none; stroke-width: 2; flex-shrink: 0; }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-    @media(max-width:900px){
-      .auth-layout{grid-template-columns:1fr;}
-      .auth-panel{display:none;}
-      .auth-form-side{padding:3rem 1.5rem;}
-    }
+    @media(max-width:900px){ .auth-layout{grid-template-columns:1fr;} .auth-panel{display:none;} .auth-form-side{padding:3rem 1.5rem;} }
     @media(max-width:480px){ .form-row-2{grid-template-columns:1fr;} }
   </style>
 </head>
@@ -246,8 +314,7 @@
   <div class="auth-panel">
     <canvas id="auth-canvas"></canvas>
     <div class="auth-panel-content">
-
-      <a href="index.html" class="auth-logo">
+      <a href="ghusn_home1.html" class="auth-logo">
         <div class="auth-logo-icon">
           <svg viewBox="0 0 24 24" fill="white"><path d="M13 22V12.07c1.5-.5 4-2.5 4-6.07a1 1 0 0 0-2 0c0 2.38-1.5 3.93-3 4.74V4a1 1 0 0 0-2 0v6.74C8.5 9.93 7 8.38 7 6a1 1 0 0 0-2 0c0 3.57 2.5 5.57 4 6.07V22a1 1 0 0 0 2 0z"/></svg>
         </div>
@@ -256,15 +323,8 @@
           <span class="auth-logo-sub">GHOSN Platform</span>
         </div>
       </a>
-
-      <h2 class="auth-panel-headline">
-        Join a movement<br>that's <em>restoring the earth.</em>
-      </h2>
-      <p class="auth-panel-desc">
-        Create your free account and start contributing to real environmental change — 
-        from planting trees to reporting desertified land.
-      </p>
-
+      <h2 class="auth-panel-headline">Join a movement<br>that's <em>restoring the earth.</em></h2>
+      <p class="auth-panel-desc">Create your free account and start contributing to real environmental change — from planting trees to reporting desertified land.</p>
       <div class="perks">
         <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Free forever, no credit card needed</span></div>
         <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Personal impact dashboard from day one</span></div>
@@ -272,7 +332,6 @@
         <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Submit & view environmental reports</span></div>
         <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Track your CO₂ savings in real time</span></div>
       </div>
-
       <p class="panel-footer">By joining you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
     </div>
   </div>
@@ -288,22 +347,15 @@
       <div class="role-selector" id="role-selector">
         <div class="role-card" id="role-resident" onclick="selectRole('resident')">
           <div class="role-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="role-icon">
-            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          </div>
+          <div class="role-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <span class="role-label">Register as<br>Resident</span>
         </div>
         <div class="role-card" id="role-volunteer" onclick="selectRole('volunteer')">
           <div class="role-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="role-icon">
-            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
+          <div class="role-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <span class="role-label">Register as<br>Volunteer</span>
         </div>
       </div>
-
-      <!-- Hidden role field -->
-      <input type="hidden" id="role" name="role">
 
       <!-- Role warning -->
       <div class="role-warning" id="role-warning">
@@ -311,66 +363,75 @@
         Please select a role before continuing.
       </div>
 
+      <!-- PHP error banner -->
+      <?php if ($error): ?>
+      <div class="auth-error show" id="signup-error"><?= htmlspecialchars($error) ?></div>
+      <?php else: ?>
       <div class="auth-error" id="signup-error"></div>
+      <?php endif; ?>
 
-      <!-- Form body (locked until role selected) -->
-      <div class="form-body locked" id="form-body">
+      <!-- Form -->
+      <form method="POST" action="signup.php" id="signup-form">
+        <input type="hidden" id="role-input" name="role" value="">
 
-        <div class="form-row-2">
-          <div class="fg">
-            <label for="fn">First Name</label>
-            <div class="input-wrap">
-              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-              <input type="text" id="fn" placeholder="Ahmed" autocomplete="given-name"/>
+        <div class="form-body locked" id="form-body">
+
+          <div class="form-row-2">
+            <div class="fg">
+              <label for="fn">First Name</label>
+              <div class="input-wrap">
+                <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                <input type="text" id="fn" name="first_name" placeholder="Ahmed" autocomplete="given-name" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>"/>
+              </div>
+            </div>
+            <div class="fg">
+              <label for="ln">Last Name</label>
+              <div class="input-wrap">
+                <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                <input type="text" id="ln" name="last_name" placeholder="Al-Rashidi" autocomplete="family-name" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>"/>
+              </div>
             </div>
           </div>
+
           <div class="fg">
-            <label for="ln">Last Name</label>
+            <label for="email">Email Address</label>
             <div class="input-wrap">
-              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-              <input type="text" id="ln" placeholder="Al-Rashidi" autocomplete="family-name"/>
+              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+              <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"/>
             </div>
           </div>
-        </div>
 
-        <div class="fg">
-          <label for="email">Email Address</label>
-          <div class="input-wrap">
-            <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <input type="email" id="email" placeholder="your@email.com" autocomplete="email"/>
+          <div class="fg">
+            <label for="pw">Password</label>
+            <div class="input-wrap">
+              <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+              <input type="password" id="pw" name="password" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password"/>
+              <span onclick="togglePw('pw', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+            </div>
+            <div class="pw-hint"><span id="pw-label">Password strength</span><strong id="pw-text"></strong></div>
+            <div class="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
           </div>
-        </div>
 
-        <div class="fg">
-          <label for="pw">Password</label>
-          <div class="input-wrap">
-            <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <input type="password" id="pw" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password"/>
-            <span onclick="togglePw('pw', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </span>
+          <div class="fg">
+            <label for="pwc">Confirm Password</label>
+            <div class="input-wrap">
+              <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+              <input type="password" id="pwc" name="confirm_password" placeholder="Repeat your password" autocomplete="new-password"/>
+              <span onclick="togglePw('pwc', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+            </div>
           </div>
-          <div class="pw-hint"><span id="pw-label">Password strength</span><strong id="pw-text"></strong></div>
-          <div class="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
-        </div>
 
-        <div class="fg">
-          <label for="pwc">Confirm Password</label>
-          <div class="input-wrap">
-            <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <input type="password" id="pwc" placeholder="Repeat your password" autocomplete="new-password"/>
-            <span onclick="togglePw('pwc', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </span>
-          </div>
-        </div>
+          <button type="submit" class="btn-auth" id="submit-btn">Create Free Account</button>
 
-        <button class="btn-auth" onclick="handleSignUp()">Create Free Account</button>
-
-      </div><!-- /form-body -->
+        </div><!-- /form-body -->
+      </form>
 
       <div class="auth-divider"><span>Already have an account?</span></div>
-      <div class="auth-switch"><a href="login.html">Sign in to غصن</a></div>
+      <div class="auth-switch"><a href="login.php">Sign in to غصن</a></div>
 
     </div>
   </div>
@@ -379,7 +440,7 @@
 
 <script src="shared.js"></script>
 <script>
-// Auth canvas (same dark night scene)
+// Auth canvas
 (function(){
   const canvas=document.getElementById('auth-canvas');
   if(!canvas)return;
@@ -393,11 +454,7 @@
     fr++;
     const w=canvas.width,h=canvas.height;
     ctx.clearRect(0,0,w,h);
-    stars.forEach(s=>{
-      const tw=s.op+Math.sin(fr*.024+s.tw)*.1;
-      ctx.fillStyle=`rgba(180,235,150,${tw})`;
-      ctx.beginPath();ctx.arc(s.x*w,s.y*h,s.r,0,Math.PI*2);ctx.fill();
-    });
+    stars.forEach(s=>{ const tw=s.op+Math.sin(fr*.024+s.tw)*.1; ctx.fillStyle=`rgba(180,235,150,${tw})`; ctx.beginPath();ctx.arc(s.x*w,s.y*h,s.r,0,Math.PI*2);ctx.fill(); });
     const mx=w*.78,my=h*.18,mr=h*.055;
     const mg=ctx.createRadialGradient(mx,my,0,mx,my,mr*2.6);
     mg.addColorStop(0,'rgba(210,250,185,.26)');mg.addColorStop(1,'rgba(210,250,185,0)');
@@ -417,7 +474,6 @@
   animate();
 })();
 
-// Toggle password visibility
 function togglePw(id, icon) {
   const input = document.getElementById(id);
   const isText = input.type === 'text';
@@ -425,73 +481,60 @@ function togglePw(id, icon) {
   icon.style.opacity = isText ? '1' : '0.4';
 }
 
-// Password strength checker
 const PW_LEVELS = ['','Weak','Fair','Good','Strong'];
 const PW_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e'];
 function checkPwStrength(v){
   let s=0;
-  if(v.length>=8)s++;
-  if(/[A-Z]/.test(v))s++;
-  if(/[0-9]/.test(v))s++;
-  if(/[^A-Za-z0-9]/.test(v))s++;
-  const bar=document.getElementById('pw-bar');
-  const txt=document.getElementById('pw-text');
+  if(v.length>=8)s++; if(/[A-Z]/.test(v))s++; if(/[0-9]/.test(v))s++; if(/[^A-Za-z0-9]/.test(v))s++;
+  const bar=document.getElementById('pw-bar'), txt=document.getElementById('pw-text');
   if(bar){ bar.style.width=['0%','28%','54%','78%','100%'][s]; bar.style.background=PW_COLORS[s]||''; }
   if(txt){ txt.textContent=PW_LEVELS[s]||''; txt.style.color=PW_COLORS[s]||''; }
 }
 
 // Role selection
-let selectedRole = '';
-function selectRole(role) {
-  selectedRole = role;
-  document.getElementById('role').value = role;
+let selectedRole = '<?= htmlspecialchars($_POST['role'] ?? '') ?>';
+(function(){ if(selectedRole) activateRole(selectedRole); })();
+
+function activateRole(role) {
   document.getElementById('role-resident').classList.toggle('active', role === 'resident');
   document.getElementById('role-volunteer').classList.toggle('active', role === 'volunteer');
   document.getElementById('form-body').classList.remove('locked');
   document.getElementById('role-warning').classList.remove('show');
 }
 
-// Sign up handler
-function handleSignUp(){
-  const fn  = document.getElementById('fn')?.value.trim();
-  const ln  = document.getElementById('ln')?.value.trim();
-  const em  = document.getElementById('email')?.value.trim();
-  const pw  = document.getElementById('pw')?.value;
-  const pwc = document.getElementById('pwc')?.value;
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('role-input').value = role;
+  activateRole(role);
+}
+
+// Client-side validation before submit
+document.getElementById('signup-form').addEventListener('submit', function(e) {
   const err = document.getElementById('signup-error');
+  const show = (msg) => { err.textContent = msg; err.classList.add('show'); e.preventDefault(); };
 
-  const show = (msg) => { if(err){ err.textContent = msg; err.classList.add('show'); } };
+  err.classList.remove('show');
 
-  // Clear previous error
-  if(err) err.classList.remove('show');
-
-  // Role check
-  if(!selectedRole){
+  if (!selectedRole) {
+    e.preventDefault();
     document.getElementById('role-warning').classList.add('show');
     document.getElementById('role-selector').scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
 
-  if(!fn || !ln || !em || !pw || !pwc){ show('Please fill in all required fields.'); return; }
-  if(pw.length < 8){ show('Password must be at least 8 characters.'); return; }
-  if(pw !== pwc){ show('Passwords do not match.'); return; }
+  const fn  = document.getElementById('fn').value.trim();
+  const ln  = document.getElementById('ln').value.trim();
+  const em  = document.getElementById('email').value.trim();
+  const pw  = document.getElementById('pw').value;
+  const pwc = document.getElementById('pwc').value;
 
-  // ✅ حفظ بيانات المستخدم في localStorage
-  const userData = {
-    firstName: fn,
-    lastName: ln,
-    email: em,
-    password: pw,
-    role: selectedRole
-  };
-  localStorage.setItem('ghosn_user', JSON.stringify(userData));
-  localStorage.setItem('userRole', selectedRole);
+  if (!fn || !ln || !em || !pw || !pwc) { show('Please fill in all required fields.'); return; }
+  if (pw.length < 8) { show('Password must be at least 8 characters.'); return; }
+  if (pw !== pwc) { show('Passwords do not match.'); return; }
 
-  console.log('Register:', fn, ln, em, 'Role:', selectedRole);
-
-  // ✅ تحويل المستخدم إلى صفحة Login بعد إنشاء الحساب
-  window.location.href = 'login.html';
-}
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('submit-btn').textContent = 'Creating account…';
+});
 </script>
 </body>
 </html>
