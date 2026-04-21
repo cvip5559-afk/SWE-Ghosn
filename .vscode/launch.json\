@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run PHP (MAMP)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:80/SWE-Ghosn/ghusn_home1.php",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
