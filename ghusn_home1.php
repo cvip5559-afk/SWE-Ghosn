@@ -15,7 +15,7 @@ $userName = $_SESSION['user_name'] ?? 'User';
 $userId   = $_SESSION['user_id']   ?? '';
 
 // رابط البروفايل حسب الـ role
-$profileHref = ($role === 'volunteer') ? 'volunteerProfile.html' : 'residentProfile.php';
+$profileHref = ($role === 'volunteer') ? 'volunteerProfile.php' : 'residentProfile.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

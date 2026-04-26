@@ -48,10 +48,11 @@ $stmt->close();
 $reports = [];
 
 $stmt2 = $conn->prepare("
-    SELECT ReportID, Severity_Level, Status, Description
-    FROM report
-    WHERE resident_ID = ?
-    ORDER BY ReportID DESC
+    SELECT r.ReportID, r.Severity_Level, r.Status, r.Description, r.Title, l.DistrictName
+    FROM report r
+    JOIN location l ON r.LocationID = l.LocationID
+    WHERE r.resident_ID = ?
+    ORDER BY r.ReportID DESC
 ");
 $stmt2->bind_param('s', $userId);
 $stmt2->execute();
@@ -345,21 +346,21 @@ function statusClass($status) {
           <img src="images/report1.jpg" alt="Report Image" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
 
           <div style="display:flex; justify-content:space-between;">
-            <h4>Report #<?php echo htmlspecialchars($report['Report_ID']); ?></h4>
+            <h4><?php echo htmlspecialchars($report['Title']); ?></h4>
             <div class="buttons">
               <button class="editButton">
-                <a href="edit.php?id=<?php echo urlencode($report['Report_ID']); ?>">Edit</a>
+                <a href="edit.php?id=<?php echo urlencode($report['ReportID']); ?>">Edit</a>
               </button>
 
               <form action="delete_report.php" method="POST" onsubmit="return confirm('Delete this report?');" style="display:inline;">
-                <input type="hidden" name="report_id" value="<?php echo htmlspecialchars($report['Report_ID']); ?>">
+                <input type="hidden" name="report_id" value="<?php echo htmlspecialchars($report['ReportID']); ?>">
                 <button type="submit" class="deleteButton">Delete</button>
               </form>
             </div>
           </div>
 
           <div class="meta">
-            📍<?php echo htmlspecialchars($profile['ResidentNeighbourhood'] ?: 'Unknown location'); ?>
+            📍<?php echo htmlspecialchars($report['DistrictName'] ?: 'Unknown location'); ?>
           </div>
 
           <div class="tags">
