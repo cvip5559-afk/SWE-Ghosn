@@ -48,7 +48,7 @@ $stmt->close();
 $reports = [];
 
 $stmt2 = $conn->prepare("
-    SELECT r.ReportID, r.Severity_Level, r.Status, r.Description, r.Title, l.DistrictName
+    SELECT r.ReportID, r.Severity_Level, r.Status, r.Description, r.Title, l.DistrictName, r.photo
     FROM report r
     JOIN location l ON r.LocationID = l.LocationID
     WHERE r.resident_ID = ?
@@ -343,8 +343,15 @@ function statusClass($status) {
     <?php else: ?>
       <?php foreach ($reports as $report): ?>
         <div class="report">
-          <img src="images/report1.jpg" alt="Report Image" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+           <?php
+$imageName = $report['photo']; 
+$imagePath =  $imageName;
+?>
 
+<img src="<?php echo $imagePath; ?>" 
+     alt="Report Image" 
+     style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+          
           <div style="display:flex; justify-content:space-between;">
             <h4><?php echo htmlspecialchars($report['Title']); ?></h4>
             <div class="buttons">
