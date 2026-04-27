@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `activity` (
   `Activity_ID` varchar(255) NOT NULL,
   `ActivityDate` date NOT NULL,
-  `Status` ENUM('Pending','In Progress','Completed') NOT NULL;
+  `Status` ENUM('Pending','In Progress','Completed') NOT NULL,
   `Report_ID` varchar(255) NOT NULL,
 `Volunteer_ID` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
