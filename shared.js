@@ -92,7 +92,7 @@ function applyRoleNav() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
 
   // صفحات Resident فقط
-  var residentOnly = ['submit.html', 'residentProfile.php'];
+  var residentOnly = ['submit.php', 'residentProfile.php'];
   // صفحات Volunteer فقط
   var volunteerOnly = ['search.php', 'volunteerProfile.php'];
 
