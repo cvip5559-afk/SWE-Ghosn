@@ -2,12 +2,10 @@
 
 session_start();
 
-// ── PROTECT PAGE ──
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-
 if (($_SESSION['role'] ?? '') !== 'resident') {
     header('Location: ghusn_home1.php');
     exit;
@@ -17,54 +15,49 @@ $residentID = $_SESSION['user_id'];
 $error      = '';
 $success    = '';
 
-
+// ── DB CONNECTION ──
 $host   = 'localhost';
 $dbName = 'ghosn_db';
-$dbUser = 'root';      
-$dbPass = 'root';           
+$dbUser = 'root';   
+$dbPass = 'root';       
 
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$dbName;charset=utf8",
-        $dbUser,
-        $dbPass,
+        $dbUser, $dbPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
 
-
+// ── HANDLE SUBMISSION ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // 1. Collect & sanitize inputs
-    $title       = trim($_POST['title']       ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $lat         = trim($_POST['lat']         ?? '');
-    $lng         = trim($_POST['lng']         ?? '');
-    $severityRaw = trim($_POST['severity']    ?? '');
+    $title        = trim($_POST['title']         ?? '');
+    $description  = trim($_POST['description']   ?? '');
+    $districtName = trim($_POST['district_name'] ?? '');
+    $streetName   = trim($_POST['street_name']   ?? '');
+    $landmark     = trim($_POST['landmark']      ?? '');
+    $postalCode   = trim($_POST['postal_code']   ?? '');
+    $severity     = (int)($_POST['severity']     ?? 0);
 
-   
-    $severity = (int) $severityRaw;
-
-    // 2. Basic validation
-    if (!$title || !$description || !$lat || !$lng || !$severity) {
-        $error = 'Please fill in all fields and select a location on the map.';
+    if (!$title || !$description || !$districtName || !$streetName || !$postalCode || !$severity) {
+        $error = 'Please fill in all required fields.';
+    } elseif (!preg_match('/^\d{5}$/', $postalCode)) {
+        $error = 'Postal code must be exactly 5 digits.';
     } elseif ($severity < 1 || $severity > 5) {
         $error = 'Invalid severity level.';
     } elseif (empty($_FILES['image']['name'])) {
         $error = 'Please upload an image.';
     } else {
 
-      
-        $uploadDir   = 'uploads/reports/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
+        $uploadDir = 'uploads/reports/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-        $file        = $_FILES['image'];
+        $file         = $_FILES['image'];
         $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        $maxSize      = 5 * 1024 * 1024; // 5 MB
+        $maxSize      = 5 * 1024 * 1024;
 
         if (!in_array($file['type'], $allowedTypes)) {
             $error = 'Only JPG, PNG, WEBP, or GIF images are allowed.';
@@ -73,45 +66,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($file['error'] !== UPLOAD_ERR_OK) {
             $error = 'Image upload failed. Please try again.';
         } else {
-            // Generate a unique filename
-            $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $filename = $uploadDir . uniqid('rpt_', true) . '.' . strtolower($ext);
-
+            $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $filename = $uploadDir . uniqid('rpt_', true) . '.' . $ext;
             if (!move_uploaded_file($file['tmp_name'], $filename)) {
                 $error = 'Could not save the image. Check folder permissions.';
             }
         }
 
-       
         if (!$error) {
             try {
                 $pdo->beginTransaction();
 
-              
                 $locationID = 'LOC-' . uniqid();
-
-                $stmtLoc = $pdo->prepare("
+                $pdo->prepare("
                     INSERT INTO location (LocationID, DistrictName, Landmark, StreetName, postalCode)
                     VALUES (:lid, :district, :landmark, :street, :postal)
-                ");
-                $stmtLoc->execute([
+                ")->execute([
                     ':lid'      => $locationID,
-                    ':district' => 'GPS Location',
-                    ':landmark' => "Lat: $lat, Lng: $lng",
-                    ':street'   => "Lat: $lat, Lng: $lng",
-                    ':postal'   => '00000',
+                    ':district' => $districtName,
+                    ':landmark' => $landmark ?: null,
+                    ':street'   => $streetName,
+                    ':postal'   => $postalCode,
                 ]);
 
-                
                 $reportID = 'RPT-' . uniqid();
-
-                $stmtRpt = $pdo->prepare("
+                $pdo->prepare("
                     INSERT INTO report
                         (ReportID, Severity_Level, Status, Description, Title, photo, resident_ID, LocationID)
                     VALUES
                         (:rid, :severity, 'Pending', :desc, :title, :photo, :resID, :locID)
-                ");
-                $stmtRpt->execute([
+                ")->execute([
                     ':rid'      => $reportID,
                     ':severity' => $severity,
                     ':desc'     => $description,
@@ -126,10 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                // Remove uploaded image if DB insert failed
-                if (isset($filename) && file_exists($filename)) {
-                    unlink($filename);
-                }
+                if (isset($filename) && file_exists($filename)) unlink($filename);
                 $error = 'Database error: ' . $e->getMessage();
             }
         }
@@ -137,8 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $role        = $_SESSION['role']      ?? 'unknown';
-$userName    = $_SESSION['user_name'] ?? 'User';
 $profileHref = ($role === 'volunteer') ? 'volunteerProfile.html' : 'residentProfile.php';
+
+function old($key) {
+    return htmlspecialchars($_POST[$key] ?? '');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -146,10 +130,7 @@ $profileHref = ($role === 'volunteer') ? 'volunteerProfile.html' : 'residentProf
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Submit Report — Ghosn</title>
-
 <link rel="stylesheet" href="shared.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 body { background: #e9e4d8; }
 
@@ -175,10 +156,23 @@ body { background: #e9e4d8; }
 
 .form-group { margin-bottom: 1rem; }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 label {
   font-weight: 600;
   margin-bottom: .3rem;
   display: block;
+}
+
+.label-optional {
+  font-weight: 400;
+  font-size: .82rem;
+  color: #888;
+  margin-left: .3rem;
 }
 
 input, textarea, select {
@@ -197,10 +191,18 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(45,122,45,0.1);
 }
 
-#map {
-  height: 300px;
-  border-radius: 12px;
-  margin-top: .5rem;
+.location-section {
+  background: #f8f8f5;
+  border: 1px solid #e0ddd5;
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+}
+
+.location-section-title {
+  font-weight: 700;
+  font-size: .9rem;
+  color: #2d7a2d;
+  margin-bottom: 1rem;
 }
 
 .submit-btn {
@@ -227,7 +229,6 @@ input:focus, textarea:focus, select:focus {
   object-fit: cover;
 }
 
-/* ALERTS */
 .alert {
   padding: 1rem 1.2rem;
   border-radius: 10px;
@@ -251,18 +252,20 @@ input:focus, textarea:focus, select:focus {
   font-weight: 700;
   text-decoration: underline;
 }
+
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; }
+}
 </style>
 </head>
-
 <body>
 
-
+<!-- NAV -->
 <nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
   <a href="#" class="nav-logo">
     <img src="images/logoo.png" alt="Ghosn Logo"
          style="width:107px;height:107px;object-fit:contain;display:block;">
   </a>
-
   <ul class="nav-links">
     <li>
       <a href="ghusn_home1.php" id="nav-home">
@@ -277,7 +280,7 @@ input:focus, textarea:focus, select:focus {
       </a>
     </li>
     <li>
-      <a href="search.php" id="nav-search">
+      <a href="search.html" id="nav-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Search
       </a>
@@ -289,7 +292,6 @@ input:focus, textarea:focus, select:focus {
       </a>
     </li>
   </ul>
-
   <div class="nav-actions">
     <button class="btn-nav-signout" style="color: #b7deb7;" onclick="signOut()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -300,13 +302,11 @@ input:focus, textarea:focus, select:focus {
 
 <br><br><br>
 
-<!-- CONTENT -->
 <main class="submit-wrap">
   <div class="form-card">
 
     <div class="submit-title">Submit Report</div>
 
-   
     <?php if ($error): ?>
       <div class="alert alert-error">⚠️ <?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
@@ -321,68 +321,81 @@ input:focus, textarea:focus, select:focus {
       </div>
     <?php endif; ?>
 
-    
     <?php if (!$success): ?>
     <form id="reportForm" method="POST" action="submit.php" enctype="multipart/form-data">
 
-      
+      <!-- TITLE -->
       <div class="form-group">
         <label for="title">Title</label>
-        <input
-          type="text"
-          id="title"
-          name="title"
-          placeholder="e.g. Dry land near Al Nakheel Park"
-          value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>"
-          required>
+        <input type="text" id="title" name="title"
+               placeholder="e.g. Dry land near Al Nakheel Park"
+               value="<?php echo old('title'); ?>" required>
       </div>
 
-      
+      <!-- DESCRIPTION -->
       <div class="form-group">
         <label for="description">Description</label>
-        <textarea
-          id="description"
-          name="description"
-          rows="4"
-          placeholder="Describe the issue in detail..."
-          required><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
+        <textarea id="description" name="description" rows="4"
+                  placeholder="Describe the issue in detail..."
+                  required><?php echo old('description'); ?></textarea>
       </div>
 
-      
+      <!-- LOCATION -->
       <div class="form-group">
-        <label>Select Location</label>
+        <div class="location-section">
+          <div class="location-section-title">📍 Location Details</div>
 
-        <button type="button" id="getLocationBtn" class="submit-btn" style="margin-bottom:.6rem;">
-          📍 Use My Current Location
-        </button>
+          <div class="form-row">
+            <div>
+              <label for="district_name">District Name</label>
+              <input type="text" id="district_name" name="district_name"
+                     placeholder="e.g. Al Nakheel"
+                     value="<?php echo old('district_name'); ?>" required>
+            </div>
+            <div>
+              <label for="street_name">Street Name</label>
+              <input type="text" id="street_name" name="street_name"
+                     placeholder="e.g. King Fahd Road"
+                     value="<?php echo old('street_name'); ?>" required>
+            </div>
+          </div>
 
-        <div id="map"></div>
-
-        <input
-          id="locationDisplay"
-          readonly
-          placeholder="Click on map or use GPS"
-          style="margin-top:.5rem; background:#f9f9f9;">
-
-        
-        <input type="hidden" id="lat" name="lat" value="<?php echo htmlspecialchars($_POST['lat'] ?? ''); ?>">
-        <input type="hidden" id="lng" name="lng" value="<?php echo htmlspecialchars($_POST['lng'] ?? ''); ?>">
+          <div class="form-row" style="margin-top:1rem;">
+            <div>
+              <label for="landmark">
+                Landmark
+                <span class="label-optional">(optional)</span>
+              </label>
+              <input type="text" id="landmark" name="landmark"
+                     placeholder="e.g. Near Al Nakheel Mall"
+                     value="<?php echo old('landmark'); ?>">
+            </div>
+            <div>
+              <label for="postal_code">Postal Code</label>
+              <input type="text" id="postal_code" name="postal_code"
+                     placeholder="e.g. 12345"
+                     maxlength="5" pattern="\d{5}"
+                     title="Must be exactly 5 digits"
+                     value="<?php echo old('postal_code'); ?>" required>
+            </div>
+          </div>
+        </div>
       </div>
 
-     
+      <!-- SEVERITY -->
       <div class="form-group">
         <label for="severity">Severity</label>
         <select id="severity" name="severity" required>
           <option value="">Select severity level</option>
-          <option value="1" <?php echo (($_POST['severity'] ?? '') == '1') ? 'selected' : ''; ?>>1 - Very Low</option>
-          <option value="2" <?php echo (($_POST['severity'] ?? '') == '2') ? 'selected' : ''; ?>>2 - Low</option>
-          <option value="3" <?php echo (($_POST['severity'] ?? '') == '3') ? 'selected' : ''; ?>>3 - Medium</option>
-          <option value="4" <?php echo (($_POST['severity'] ?? '') == '4') ? 'selected' : ''; ?>>4 - High</option>
-          <option value="5" <?php echo (($_POST['severity'] ?? '') == '5') ? 'selected' : ''; ?>>5 - Very High</option>
+          <option value="1" <?php echo (old('severity') == '1') ? 'selected' : ''; ?>>1 - Very Low</option>
+          <option value="2" <?php echo (old('severity') == '2') ? 'selected' : ''; ?>>2 - Low</option>
+          <option value="3" <?php echo (old('severity') == '3') ? 'selected' : ''; ?>>3 - Medium</option>
+          <option value="4" <?php echo (old('severity') == '4') ? 'selected' : ''; ?>>4 - High</option>
+          <option value="5" <?php echo (old('severity') == '5') ? 'selected' : ''; ?>>5 - Very High</option>
         </select>
       </div>
 
-      
+      <!-- IMAGE -->
       <div class="form-group">
         <label for="image">Upload Image <span style="color:#b91c1c;">(Required)</span></label>
         <input type="file" id="image" name="image" accept="image/*">
@@ -397,88 +410,20 @@ input:focus, textarea:focus, select:focus {
   </div>
 </main>
 
-<!-- SCRIPTS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const latInput      = document.getElementById('lat');
-const lngInput      = document.getElementById('lng');
-const locationDisplay = document.getElementById('locationDisplay');
-const preview       = document.getElementById('preview');
-
-
-const map = L.map('map').setView([24.7136, 46.6753], 12); // Default: Riyadh
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-let marker;
-
-function setMarker(lat, lng) {
-  if (marker) map.removeLayer(marker);
-  marker = L.marker([lat, lng]).addTo(map);
-  latInput.value      = lat;
-  lngInput.value      = lng;
-  locationDisplay.value = `Lat: ${parseFloat(lat).toFixed(4)}, Lng: ${parseFloat(lng).toFixed(4)}`;
-}
-
-
-const savedLat = latInput.value;
-const savedLng = lngInput.value;
-if (savedLat && savedLng) {
-  map.setView([savedLat, savedLng], 15);
-  setMarker(savedLat, savedLng);
-}
-
-// Click on map
-map.on('click', function(e) {
-  setMarker(e.latlng.lat, e.latlng.lng);
-});
-
-// GPS button
-document.getElementById('getLocationBtn').onclick = () => {
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser.');
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      map.setView([lat, lng], 15);
-      setMarker(lat, lng);
-    },
-    () => alert('Could not get your location. Please click on the map instead.')
-  );
-};
-
-
-document.getElementById('image').addEventListener('change', e => {
+document.getElementById('image').addEventListener('change', function(e) {
   const file = e.target.files[0];
+  const preview = document.getElementById('preview');
   if (!file) { preview.style.display = 'none'; return; }
   const reader = new FileReader();
-  reader.onload = () => {
-    preview.src = reader.result;
-    preview.style.display = 'block';
-  };
+  reader.onload = () => { preview.src = reader.result; preview.style.display = 'block'; };
   reader.readAsDataURL(file);
 });
 
-
-document.getElementById('reportForm')?.addEventListener('submit', function(e) {
-  if (!latInput.value || !lngInput.value) {
-    e.preventDefault();
-    alert('Please select a location on the map 📍');
-    return;
-  }
-  if (!document.getElementById('image').files.length) {
-    e.preventDefault();
-    alert('Please upload an image 📷');
-    return;
-  }
- 
-  document.getElementById('submitBtn').textContent = 'Submitting…';
-  document.getElementById('submitBtn').disabled = true;
+document.getElementById('reportForm')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Submitting…';
+  btn.disabled = true;
 });
 </script>
 <script src="shared.js"></script>
