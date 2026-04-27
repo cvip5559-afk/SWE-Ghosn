@@ -6,7 +6,7 @@ require_once 'includes/connection.php';
 $query = "
 SELECT *
 FROM report
-ORDER BY Date DESC
+ORDER BY CreatedAt DESC
 ";
 
 $result = mysqli_query($conn, $query);
@@ -337,7 +337,7 @@ body{
                 <div class="report-card">
 
                     <img
-                        src="<?= htmlspecialchars($r['Image']) ?>"
+                        src="<?= htmlspecialchars($r['photo']) ?>"
                         class="report-image"
                     >
 
@@ -383,7 +383,7 @@ body{
                             <span class="badge">
 
                                 Severity:
-                                <?= $r['Severity'] ?>/5
+                                <?= $r['Severity_Level'] ?>/5
 
                             </span>
 
