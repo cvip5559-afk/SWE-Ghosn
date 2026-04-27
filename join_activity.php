@@ -1,100 +1,68 @@
-
 <?php
 session_start();
 require_once 'includes/connection.php';
 
-if (empty($_SESSION['user_id'])) {
-    exit("Not logged in");
+if (!isset($_SESSION['user_id'])) {
+    die("Login required");
 }
 
-if (($_SESSION['role'] ?? '') !== 'volunteer') {
-    exit("Only volunteers can join.");
-}
-
-$volunteerId = $_SESSION['user_id'];
+$userId = $_SESSION['user_id'];
 $reportId = $_POST['report_id'] ?? '';
 
-if (!$reportId) {
-    exit("Missing report ID");
+if (empty($reportId)) {
+    die("Missing report ID");
 }
 
-/* CHECK REPORT */
-$stmt = $conn->prepare("
-    SELECT Status
-    FROM report
-    WHERE ReportID = ?
-    LIMIT 1
+/* check if user is volunteer */
+
+$checkVolunteer = mysqli_query($conn, "
+SELECT *
+FROM volunteer
+WHERE Volunteer_ID = '$userId'
 ");
 
-$stmt->bind_param("s", $reportId);
-$stmt->execute();
-
-$result = $stmt->get_result();
-$report = $result->fetch_assoc();
-
-$stmt->close();
-
-if (!$report) {
-    exit("Report not found");
+if (mysqli_num_rows($checkVolunteer) == 0) {
+    die("Only volunteers can volunteer");
 }
 
-if (strtolower($report['Status']) === 'resolved') {
-    exit("This report is already resolved.");
-}
+/* prevent duplicate volunteer */
 
-/* PREVENT DUPLICATE JOIN */
-$check = $conn->prepare("
-    SELECT Activity_ID
-    FROM activity
-    WHERE Volunteer_ID = ? AND Report_ID = ?
-    LIMIT 1
+$checkExisting = mysqli_query($conn, "
+SELECT *
+FROM activity
+WHERE Volunteer_ID = '$userId'
+AND Report_ID = '$reportId'
 ");
 
-$check->bind_param("ss", $volunteerId, $reportId);
-$check->execute();
-
-$exists = $check->get_result();
-
-if ($exists->num_rows > 0) {
-    exit("You already joined this report.");
+if (mysqli_num_rows($checkExisting) > 0) {
+    die("Already volunteered");
 }
 
-$check->close();
+/* create activity */
 
-/* CREATE ACTIVITY */
-$activityId = 'ACT-' . uniqid();
+$activityId = uniqid("ACT_");
+$date = date("Y-m-d");
 
-$insert = $conn->prepare("
-    INSERT INTO activity
-    (Activity_ID, Volunteer_ID, Report_ID, Status)
-    VALUES (?, ?, ?, 'Pending')
+mysqli_query($conn, "
+INSERT INTO activity
+(Activity_ID, Volunteer_ID, Report_ID, Status, ActivityDate)
+
+VALUES
+
+('$activityId', '$userId', '$reportId', 'Pending', '$date')
 ");
 
-$insert->bind_param(
-    "sss",
-    $activityId,
-    $volunteerId,
-    $reportId
-);
+/* insert into assign */
 
-if ($insert->execute()) {
+mysqli_query($conn, "
+INSERT INTO assign
+(Activity_ID, Volunteer_ID, ParticipationStatus)
 
-    /* update report status */
-    $update = $conn->prepare("
-        UPDATE report
-        SET Status = 'In Progress'
-        WHERE ReportID = ?
-    ");
+VALUES
 
-    $update->bind_param("s", $reportId);
-    $update->execute();
-    $update->close();
+('$activityId', '$userId', 'Assigned')
+");
 
-    header("Location: volunteerProfile.php");
-    exit;
-
-} else {
-    echo "Error joining activity.";
-}
+header("Location: volunteerProfile.php");
+exit;
 ?>
-```

@@ -92,9 +92,9 @@ function applyRoleNav() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
 
   // صفحات Resident فقط
-  var residentOnly = ['submit.html', 'residentProfile.html'];
+  var residentOnly = ['submit.html', 'residentProfile.php'];
   // صفحات Volunteer فقط
-  var volunteerOnly = ['search.html', 'volunteerProfile.html'];
+  var volunteerOnly = ['search.php', 'volunteerProfile.php'];
 
   if (residentOnly.indexOf(page) !== -1 && role !== 'resident') {
     window.location.replace(role === 'volunteer' ? 'ghusn_home1.php' : 'login.php');
@@ -162,9 +162,9 @@ function applyRoleNav() {
     profileEl.addEventListener('click', function(e) {
       e.preventDefault();
       if (role === 'volunteer') {
-        window.location.href = 'volunteerProfile.html';
+        window.location.href = 'volunteerProfile.php';
       } else if (role === 'resident') {
-        window.location.href = 'residentProfile.html';
+        window.location.href = 'residentProfile.php';
       } else {
         window.location.href = 'login.php';
       }
