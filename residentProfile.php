@@ -286,7 +286,7 @@ function statusClass($status) {
       </a>
     </li>
     <li>
-      <a href="submit.html" id="nav-report">
+      <a href="submit.php" id="nav-report">
         Submit Report
       </a>
     </li>
@@ -329,7 +329,7 @@ function statusClass($status) {
         <h2><?php echo $reportsCount; ?></h2>
       </div>
       <br>
-      <p class="btn"><a href="submit.html">+ New Report</a></p>
+      <p class="btn"><a href="submit.php">+ New Report</a></p>
     </div>
   </div>
 
@@ -343,15 +343,14 @@ function statusClass($status) {
     <?php else: ?>
       <?php foreach ($reports as $report): ?>
         <div class="report">
-           <?php
-$imageName = $report['photo']; 
+          <?php
+$imageName = $report['photo']; // اسم الصورة من الداتابيس
 $imagePath =  $imageName;
 ?>
 
 <img src="<?php echo $imagePath; ?>" 
      alt="Report Image" 
      style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-          
           <div style="display:flex; justify-content:space-between;">
             <h4><?php echo htmlspecialchars($report['Title']); ?></h4>
             <div class="buttons">
