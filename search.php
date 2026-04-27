@@ -1,6 +1,17 @@
 <?php
 session_start();
 require_once 'includes/connection.php';
+<<<<<<< HEAD
+=======
+
+$query = "
+SELECT *
+FROM report
+ORDER BY CreatedAt DESC
+";
+
+$result = mysqli_query($conn, $query);
+>>>>>>> efa5b8b0316a378f7430e8ac01249905a0c3a38d
 ?>
 
 <!DOCTYPE html>
@@ -211,6 +222,7 @@ if($row['Severity_Level'] == 5){
 
 ?>
 
+<<<<<<< HEAD
 <article style="
 background:white;
 border-radius:14px;
@@ -220,6 +232,12 @@ border:1px solid var(--border-l);
 transition: all .25s ease;
 position:relative;
 ">
+=======
+                    <img
+                        src="<?= htmlspecialchars($r['photo']) ?>"
+                        class="report-image"
+                    >
+>>>>>>> efa5b8b0316a378f7430e8ac01249905a0c3a38d
 
 <img
 
@@ -289,11 +307,16 @@ margin-left:6px;
 
 </p>
 
+<<<<<<< HEAD
 <p style="
 font-size:.75rem;
 color:#6b7280;
 margin-bottom:.4rem;
 ">
+=======
+                                Severity:
+                                <?= $r['Severity_Level'] ?>/5
+>>>>>>> efa5b8b0316a378f7430e8ac01249905a0c3a38d
 
 Report ID:
 <?php echo $row['ReportID']; ?>
