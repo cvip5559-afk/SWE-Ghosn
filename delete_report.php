@@ -49,12 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt2->bind_param("ss", $reportId, $userId);
 
     if ($stmt2->execute()) {
-        header('Location: residentProfile.php');
-        exit;
-    } else {
-        echo 'Error deleting report.';
-    }
-
+    echo "<script>
+        alert('Report deleted successfully.');
+        window.location.href = 'residentProfile.php';
+    </script>";
+    exit;
+} else {
+    echo "<script>
+        alert('Error deleting report.');
+        window.location.href = 'residentProfile.php';
+    </script>";
+} 
     $stmt2->close();
 }
 ?>
