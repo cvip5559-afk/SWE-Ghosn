@@ -1,540 +1,534 @@
 <?php
-// ══════════════════════════════════════════════
-// signup.php — GHOSN Platform
-// ══════════════════════════════════════════════
-
 session_start();
 require_once 'includes/connection.php';
 
-$error   = '';
-$success = false;
+if (empty($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SESSION['role'] ?? '') !== 'volunteer') {
+    header('Location: ghusn_home1.php');
+    exit;
+}
+$userId   = $_SESSION['user_id'];
+$userName = $_SESSION['user_name'] ?? 'Volunteer';
+$email    = $_SESSION['email'] ?? '';
 
-    $firstName = trim($_POST['first_name'] ?? '');
-    $lastName  = trim($_POST['last_name']  ?? '');
-    $email     = trim($_POST['email']      ?? '');
-    $password  = $_POST['password']        ?? '';
-    $confirm   = $_POST['confirm_password'] ?? '';
-    $role      = strtolower(trim($_POST['role'] ?? ''));
+$profile = [
+    'User_name' => $userName,
+    'email' => $email,
+    'phone' => '',
+    'DateOfJoining' => '',
+];
 
-    // ── Validation ────────────────────────────
-    if (!$firstName || !$lastName || !$email || !$password || !$confirm || !$role) {
-        $error = 'Please fill in all required fields.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email address.';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters.';
-    } elseif ($password !== $confirm) {
-        $error = 'Passwords do not match.';
-    } elseif (!in_array($role, ['resident', 'volunteer'])) {
-        $error = 'Please select a valid role.';
-    } else {
-        // ── Check duplicate email ──────────────
-        $chk = $conn->prepare('SELECT User_ID FROM user WHERE email = ?');
-        $chk->bind_param('s', $email);
-        $chk->execute();
-        $chk->store_result();
+$stmt = $conn->prepare("
+    SELECT u.User_name, u.email, u.phone, v.DateOfJoining
+    FROM user u
+    JOIN volunteer v ON v.Volunteer_ID = u.User_ID
+    WHERE u.User_ID = ?
+    LIMIT 1
+");
+$stmt->bind_param('s', $userId);
+$stmt->execute();
+$result = $stmt->get_result();
 
-        if ($chk->num_rows > 0) {
-            $error = 'An account with this email already exists.';
-        }
-        $chk->close();
+if ($result && $result->num_rows > 0) {
+    $profile = $result->fetch_assoc();
+}
+$stmt->close();
+
+$activities = [];
+
+$stmt2 = $conn->prepare("
+    SELECT 
+        a.Activity_ID,
+        a.Status,
+        a.Report_ID,
+        r.Title,
+        r.Description,
+        r.Severity_Level,
+        r.photo
+    FROM activity a
+    LEFT JOIN report r ON r.ReportID = a.Report_ID
+    WHERE a.Volunteer_ID = ?
+    ORDER BY a.Activity_ID DESC
+");
+$stmt2->bind_param('s', $userId);
+$stmt2->execute();
+$result2 = $stmt2->get_result();
+
+if ($result2) {
+    while ($row = $result2->fetch_assoc()) {
+        $activities[] = $row;
     }
+}
+$stmt2->close();
 
-    // ── Insert into DB ────────────────────────
-    if (!$error) {
-        $userId         = 'USR_' . time() . '_' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
-        $userName       = $firstName . ' ' . $lastName;
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-        $phone          = '';
+$activitiesCount = count($activities);
+$avatarLetter = strtoupper(substr(trim($profile['User_name'] ?? 'V'), 0, 1));
 
-        $conn->begin_transaction();
-        try {
-            // 1. Insert into `user`
-            $stmtUser = $conn->prepare(
-                'INSERT INTO user (User_ID, User_name, email, phone, password) VALUES (?, ?, ?, ?, ?)'
-            );
-            $stmtUser->bind_param('sssss', $userId, $userName, $email, $phone, $hashedPassword);
-            $stmtUser->execute();
-            $stmtUser->close();
+function activityStatusClass($status) {
+    $status = strtolower(trim($status));
+    if ($status === 'completed') return 'completed';
+    if ($status === 'in progress') return 'progress';
+    return 'planned';
+}
 
-            // 2. Insert into role table
-            if ($role === 'resident') {
-                $neighbourhood = '';
-                $stmt2 = $conn->prepare('INSERT INTO resident (resident_ID, ResidentNeighbourhood) VALUES (?, ?)');
-                $stmt2->bind_param('ss', $userId, $neighbourhood);
-            } else {
-                $dateJoined = date('Y-m-d');
-                $stmt2 = $conn->prepare('INSERT INTO volunteer (Volunteer_ID, DateOfJoining) VALUES (?, ?)');
-                $stmt2->bind_param('ss', $userId, $dateJoined);
-            }
-            $stmt2->execute();
-            $stmt2->close();
+function severityClass($level) {
+    $level = (int)$level;
+    if ($level >= 4) return 'high';
+    if ($level == 3) return 'medium';
+    return 'low';
+}
 
-            $conn->commit();
-            $success = true;
-
-            // ── Redirect to login after success ──
-            header('Location: login.php?registered=1');
-            exit;
-
-        } catch (Exception $e) {
-            $conn->rollback();
-            $error = 'Registration failed. Please try again.';
-        }
-    }
-
-    $conn->close();
+function formatJoinDate($date) {
+    if (!$date) return 'Not added';
+    $timestamp = strtotime($date);
+    if (!$timestamp) return $date;
+    return date('M Y', $timestamp);
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Create Account — غصن Platform</title>
-  <link rel="stylesheet" href="shared.css"/>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌴</text></svg>"/>
+  <meta charset="UTF-8">
+  <title>Volunteer Profile</title>
+  <link rel="stylesheet" href="shared.css">
+
   <style>
-    body { background: var(--surface-1); min-height: 100vh; }
-
-    .auth-layout {
-      display: grid;
-      grid-template-columns: 1fr 1.1fr;
-      min-height: 100vh;
+    body {
+      background-color: #ded8c8d0;
+      font-family: 'DM Sans', sans-serif;
+      margin: 0;
     }
 
-    /* Left panel */
-    .auth-panel {
-      position: relative;
-      background: linear-gradient(155deg, var(--g700) 0%, var(--g900) 60%, var(--g950) 100%);
-      display: flex; flex-direction: column;
+    .container {
+      width: 85%;
+      margin: 100px auto 40px;
+    }
+
+    .profile {
+      background: rgb(246, 244, 239);
+      padding: 50px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      background: rgb(2, 74, 2);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
       justify-content: center;
-      padding: 4rem 3rem;
-      overflow: hidden;
+      font-size: 22px;
+      font-weight: bold;
     }
-    .auth-panel::before {
-      content: ''; position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse at 25% 20%, rgba(93,158,65,.22) 0%, transparent 52%),
-        radial-gradient(ellipse at 75% 80%, rgba(168,216,120,.10) 0%, transparent 48%);
-      pointer-events: none;
+
+    .name {
+      font-size: 25px;
+      font-weight: bold;
     }
-    #auth-canvas { position: absolute; inset: 0; width:100%; height:100%; pointer-events:none; opacity:.5; }
-    .auth-panel-content { position: relative; z-index: 1; }
 
-    .auth-logo {
-      display: inline-flex; align-items: center; gap: .65rem;
-      text-decoration: none; margin-bottom: 3rem;
+    .info {
+      font-size: 16px;
+      color: rgb(69, 119, 68);
     }
-    .auth-logo-icon {
-      width: 42px; height: 42px;
-      background: rgba(255,255,255,.15); border-radius: 50% 50% 50% 18%;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid rgba(255,255,255,.20);
+
+    .reports-count {
+      border: solid 1.5px #8fac8f;
+      border-radius: 10px;
+      background-color: #e9f6e9;
+      padding: 10px;
+      width: 140px;
+      text-align: center;
     }
-    .auth-logo-icon svg { width: 22px; height: 22px; fill: white; }
-    .auth-logo-name { font-family:'Cinzel',serif; font-size:1.55rem; font-weight:400; color:white; letter-spacing:.07em; }
-    .auth-logo-sub { font-size:.68rem; font-weight:500; color:rgba(255,255,255,.5); letter-spacing:.07em; text-transform:uppercase; display:block; margin-top:-.2rem; }
 
-    .auth-panel-headline {
-      font-family: 'Fraunces', serif;
-      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
-      font-weight: 600; color: white;
-      line-height: 1.25; letter-spacing: -.022em;
-      margin-bottom: .8rem;
+    .reports-count h2 {
+      margin: 0;
+      color: green;
     }
-    .auth-panel-headline em { font-style:italic; font-weight:300; color:var(--g100); }
-    .auth-panel-desc { font-size: .87rem; color: rgba(255,255,255,.55); line-height:1.7; margin-bottom: 2.5rem; max-width:340px; }
 
-    .perks { display:flex; flex-direction:column; gap:.7rem; }
-    .perk {
-      display:flex; align-items:center; gap:.8rem;
-      padding:.72rem 1rem;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.09);
-      border-radius:var(--r-md);
+    .role {
+      font-size: 14px;
+      font-weight: bold;
+      background-color: rgb(156, 156, 21);
+      border-radius: 10px;
+      padding: 2px 8px;
+      color: white;
+      text-align: center;
     }
-    .perk-check {
-      width:24px; height:24px; flex-shrink:0; border-radius:50%;
-      background:rgba(168,216,120,.18);
-      display:flex; align-items:center; justify-content:center;
-    }
-    .perk-check svg { width:13px; height:13px; stroke:var(--g100); fill:none; stroke-width:2.5; }
-    .perk span { font-size:.86rem; color:rgba(255,255,255,.7); }
 
-    .panel-footer { margin-top:2.5rem; font-size:.8rem; color:rgba(255,255,255,.3); }
-    .panel-footer a { color:var(--g100); font-weight:600; }
-
-    /* Right (form) */
-    .auth-form-side {
-      display:flex; flex-direction:column; justify-content:center;
-      align-items:center; padding:3rem 3rem;
-      background:var(--surface-0);
-      overflow-y:auto;
-    }
-    .auth-form-wrap { width:100%; max-width:460px; }
-
-    .auth-back {
-      display:inline-flex; align-items:center; gap:.45rem;
-      font-size:.82rem; font-weight:600; color:var(--n500);
-      text-decoration:none; margin-bottom:2rem; transition:color .25s;
-    }
-    .auth-back svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; }
-    .auth-back:hover { color:var(--g300); }
-
-    .auth-form-title { font-family:'Fraunces',serif; font-size:1.95rem; font-weight:700; color:var(--n900); letter-spacing:-.028em; margin-bottom:.3rem; }
-    .auth-form-sub { font-size:.88rem; color:var(--n500); margin-bottom:2rem; }
-
-    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-
-    .fg { margin-bottom:1.05rem; }
-    .fg label { display:block; font-size:.8rem; font-weight:600; color:var(--n700); margin-bottom:.38rem; letter-spacing:.01em; }
-    .input-wrap { position:relative; }
-    .input-ico { position:absolute; left:.9rem; top:50%; transform:translateY(-50%); pointer-events:none; }
-    .input-ico svg { width:16px; height:16px; stroke:var(--n300); fill:none; stroke-width:1.8; }
-    .fg input, .fg select {
-      width:100%; padding:.8rem .9rem .8rem 2.6rem;
-      border:1.5px solid var(--n100); border-radius:var(--r-sm);
-      font-size:.91rem; font-family:'DM Sans',sans-serif; color:var(--n900);
-      background:white; outline:none; appearance:none;
-      transition:border-color .3s, box-shadow .3s;
-    }
-    .fg select { cursor:pointer; }
-    .fg input:focus, .fg select:focus { border-color:var(--g300); box-shadow:0 0 0 3px rgba(93,158,65,.12); }
-    .fg input::placeholder { color:var(--n100); }
-
-    /* Password strength */
-    .pw-hint { display:flex; justify-content:space-between; align-items:center; margin-top:.3rem; }
-    .pw-hint span { font-size:.74rem; color:var(--n300); }
-    .pw-hint strong { font-size:.74rem; font-weight:600; color:var(--n500); }
-    .pw-strength { height:3px; border-radius:2px; background:var(--n100); overflow:hidden; margin-top:.28rem; }
-    .pw-bar { height:100%; width:0; border-radius:2px; transition:width .4s ease, background .4s ease; }
-
-    .btn-auth {
-      width:100%; padding:.95rem; border:none; border-radius:var(--r-sm);
-      background:linear-gradient(135deg,var(--g300),var(--g500));
-      color:white; font-size:1rem; font-weight:700;
-      font-family:'DM Sans',sans-serif; cursor:pointer;
-      box-shadow:var(--sh-grn); letter-spacing:.01em;
-      transition:all .35s ease; margin-bottom:1.3rem;
-    }
-    .btn-auth:hover { transform:translateY(-2px); box-shadow:var(--sh-grn-lg); }
-
-    .auth-divider { display:flex; align-items:center; gap:1rem; margin-bottom:1.3rem; }
-    .auth-divider span { font-size:.78rem; color:var(--n300); white-space:nowrap; }
-    .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--n100); }
-    .auth-switch { text-align:center; font-size:.87rem; color:var(--n500); }
-    .auth-switch a { color:var(--g400); font-weight:700; }
-
-    .auth-error { display:none; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:var(--r-sm); padding:.75rem 1rem; font-size:.85rem; margin-bottom:1rem; }
-    .auth-error.show { display:block; }
-
-    /* Role selector */
-    .role-selector {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: .75rem;
-      margin-bottom: 1.8rem;
-    }
-    .role-card {
-      position: relative;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: .5rem;
-      padding: 1rem .75rem;
-      border: 2px solid var(--n100);
-      border-radius: var(--r-md);
-      background: white;
+    .btn {
+      background: rgb(3, 55, 3);
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
-      transition: border-color .3s ease, background .3s ease, transform .25s ease, box-shadow .3s ease;
-      user-select: none;
-      overflow: hidden;
+      font-weight: bold;
+      display: inline-block;
     }
-    .role-card::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(93,158,65,.07) 0%, rgba(168,216,120,.04) 100%);
-      opacity: 0;
-      transition: opacity .3s ease;
+
+    .btn a {
+      color: white;
+      text-decoration: none;
     }
-    .role-card:hover { border-color: var(--g300); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(93,158,65,.1); }
-    .role-card:hover::before { opacity: 1; }
-    .role-card.active {
-      border-color: var(--g300);
-      background: linear-gradient(135deg, rgba(93,158,65,.06) 0%, rgba(168,216,120,.03) 100%);
-      box-shadow: 0 0 0 3px rgba(93,158,65,.14), 0 4px 16px rgba(93,158,65,.12);
+
+    .reports {
+      background: rgb(246, 244, 239);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .report {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      background: white;
+    }
+
+    .report h4 {
+      margin: 0;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: gray;
+      margin: 5px 0;
+    }
+
+    .tags {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .high { background: #b91c1c; color: #ffffff; }
+    .medium { background: #b45309; color: #ffffff; }
+    .low { background: #15803d; color: #ffffff; }
+
+    .planned {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .completed {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .empty-box {
+      text-align: center;
+      color: #6b7280;
+      padding: 30px 10px;
+    }
+
+    .status-btn {
+      background: linear-gradient(135deg, #2d7a2d, #4caf50);
+      color: white;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      transition: 0.2s ease;
+    }
+
+    .status-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+    }
+
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    .popup-box {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      width: 330px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      animation: popupFade 0.2s ease;
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .popup-header h3 {
+      margin: 0;
+      color: #1f3b1f;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      color: #555;
+      transition: 0.2s;
+    }
+
+    .close-btn:hover {
+      color: #b03d35;
+      transform: scale(1.15);
+    }
+
+    #statusSelect {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-weight: 600;
+    }
+
+    .save-btn {
+      width: 100%;
+      background: #2d7a2d;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .save-btn:hover {
+      background: #1f5f1f;
       transform: translateY(-1px);
     }
-    .role-card.active::before { opacity: 1; }
-    .role-icon {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--n50, #f8fafc);
-      display: flex; align-items: center; justify-content: center;
-      transition: background .3s ease, transform .3s ease;
-    }
-    .role-card:hover .role-icon, .role-card.active .role-icon { background: rgba(93,158,65,.12); transform: scale(1.08); }
-    .role-icon svg { width: 22px; height: 22px; stroke: var(--n400); fill: none; stroke-width: 1.8; transition: stroke .3s ease; }
-    .role-card.active .role-icon svg, .role-card:hover .role-icon svg { stroke: var(--g400); }
-    .role-label { font-size: .82rem; font-weight: 700; color: var(--n600); letter-spacing: .01em; transition: color .3s ease; text-align: center; }
-    .role-card.active .role-label { color: var(--g500); }
-    .role-check {
-      position: absolute; top: .5rem; right: .5rem;
-      width: 18px; height: 18px; background: var(--g300); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transform: scale(.5);
-      transition: opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
-    }
-    .role-card.active .role-check { opacity: 1; transform: scale(1); }
-    .role-check svg { width: 10px; height: 10px; stroke: white; fill: none; stroke-width: 3; }
 
-    .form-body { transition: opacity .35s ease; }
-    .form-body.locked { opacity: .45; pointer-events: none; filter: blur(.5px); }
-
-    .role-warning {
-      display: none; align-items: center; gap: .5rem;
-      background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
-      border-radius: var(--r-sm); padding: .65rem .9rem;
-      font-size: .82rem; margin-bottom: 1rem;
-      animation: slideDown .25s ease;
+    @keyframes popupFade {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
     }
-    .role-warning.show { display: flex; }
-    .role-warning svg { width: 15px; height: 15px; stroke: #d97706; fill: none; stroke-width: 2; flex-shrink: 0; }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-    @media(max-width:900px){ .auth-layout{grid-template-columns:1fr;} .auth-panel{display:none;} .auth-form-side{padding:3rem 1.5rem;} }
-    @media(max-width:480px){ .form-row-2{grid-template-columns:1fr;} }
+    @media (max-width: 768px) {
+      .profile {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+
+      #mainNav {
+        height: 150px;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-<div class="auth-layout">
+<nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
+  <a href="ghusn_home1.php" class="nav-logo">
+    <img src="images/logoo.png" alt="Ghosn Logo"
+         style="width:107px; height:107px; object-fit:contain; display:block;">
+  </a>
 
-  <!-- Left -->
-  <div class="auth-panel">
-    <canvas id="auth-canvas"></canvas>
-    <div class="auth-panel-content">
-      <a href="ghusn_home1.html" class="auth-logo">
-        <div class="auth-logo-icon">
-          <svg viewBox="0 0 24 24" fill="white"><path d="M13 22V12.07c1.5-.5 4-2.5 4-6.07a1 1 0 0 0-2 0c0 2.38-1.5 3.93-3 4.74V4a1 1 0 0 0-2 0v6.74C8.5 9.93 7 8.38 7 6a1 1 0 0 0-2 0c0 3.57 2.5 5.57 4 6.07V22a1 1 0 0 0 2 0z"/></svg>
+  <ul class="nav-links">
+    <li>
+      <a href="ghusn_home1.php" id="nav-home">Home</a>
+    </li>
+    <li>
+      <a href="search.php" id="nav-search">Search</a>
+    </li>
+    <li>
+      <a href="volunteerProfile.php" id="nav-profile" class="active" style="color: #b7deb7;">Profile</a>
+    </li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-nav-signout" style="color: #b7deb7;" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<br><br><br>
+
+<div class="container">
+
+  <div class="profile">
+    <div class="user">
+      <div class="avatar"><?php echo htmlspecialchars($avatarLetter); ?></div>
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap; padding-bottom: 10px;">
+          <div class="name"><?php echo htmlspecialchars($profile['User_name'] ?? 'Volunteer'); ?></div>
+          <div class="role">Volunteer</div>
         </div>
-        <div>
-          <span class="auth-logo-name">Ghosn</span>
-          <span class="auth-logo-sub">GHOSN Platform</span>
+        <div class="info">
+          <p>📧 Email: <?php echo htmlspecialchars($profile['email'] ?? ''); ?></p>
+          <p>📞 Phone: <?php echo htmlspecialchars($profile['phone'] ?: 'Not added'); ?></p>
+          <p>📅 Member since: <?php echo htmlspecialchars(formatJoinDate($profile['DateOfJoining'] ?? '')); ?></p>
         </div>
-      </a>
-      <h2 class="auth-panel-headline">Join a movement<br>that's <em>restoring the earth.</em></h2>
-      <p class="auth-panel-desc">Create your free account and start contributing to real environmental change — from planting trees to reporting desertified land.</p>
-      <div class="perks">
-        <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Free forever, no credit card needed</span></div>
-        <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Personal impact dashboard from day one</span></div>
-        <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Join verified community campaigns</span></div>
-        <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Submit & view environmental reports</span></div>
-        <div class="perk"><div class="perk-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>Track your CO₂ savings in real time</span></div>
       </div>
-      <p class="panel-footer">By joining you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+    </div>
+
+    <div>
+      <div class="reports-count">
+        <span>Contributions</span>
+        <h2><?php echo $activitiesCount; ?></h2>
+      </div>
     </div>
   </div>
 
-  <!-- Right (form) -->
-  <div class="auth-form-side">
-    <div class="auth-form-wrap">
-
-      <h1 class="auth-form-title">Create Account</h1>
-      <p class="auth-form-sub">Join thousands of environmental volunteers on غصن.</p>
-
-      <!-- Role Selection -->
-      <div class="role-selector" id="role-selector">
-        <div class="role-card" id="role-resident" onclick="selectRole('resident')">
-          <div class="role-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="role-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-          <span class="role-label">Register as<br>Resident</span>
-        </div>
-        <div class="role-card" id="role-volunteer" onclick="selectRole('volunteer')">
-          <div class="role-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="role-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <span class="role-label">Register as<br>Volunteer</span>
-        </div>
-      </div>
-
-      <!-- Role warning -->
-      <div class="role-warning" id="role-warning">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Please select a role before continuing.
-      </div>
-
-      <!-- PHP error banner -->
-      <?php if ($error): ?>
-      <div class="auth-error show" id="signup-error"><?= htmlspecialchars($error) ?></div>
-      <?php else: ?>
-      <div class="auth-error" id="signup-error"></div>
-      <?php endif; ?>
-
-      <!-- Form -->
-      <form method="POST" action="signup.php" id="signup-form">
-        <input type="hidden" id="role-input" name="role" value="">
-
-        <div class="form-body locked" id="form-body">
-
-          <div class="form-row-2">
-            <div class="fg">
-              <label for="fn">First Name</label>
-              <div class="input-wrap">
-                <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                <input type="text" id="fn" name="first_name" placeholder="Ahmed" autocomplete="given-name" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>"/>
-              </div>
-            </div>
-            <div class="fg">
-              <label for="ln">Last Name</label>
-              <div class="input-wrap">
-                <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                <input type="text" id="ln" name="last_name" placeholder="Al-Rashidi" autocomplete="family-name" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>"/>
-              </div>
-            </div>
-          </div>
-
-          <div class="fg">
-            <label for="email">Email Address</label>
-            <div class="input-wrap">
-              <span class="input-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
-              <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"/>
-            </div>
-          </div>
-
-          <div class="fg">
-            <label for="pw">Password</label>
-            <div class="input-wrap">
-              <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-              <input type="password" id="pw" name="password" placeholder="Min. 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password"/>
-              <span onclick="togglePw('pw', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              </span>
-            </div>
-            <div class="pw-hint"><span id="pw-label">Password strength</span><strong id="pw-text"></strong></div>
-            <div class="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
-          </div>
-
-          <div class="fg">
-            <label for="pwc">Confirm Password</label>
-            <div class="input-wrap">
-              <span class="input-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-              <input type="password" id="pwc" name="confirm_password" placeholder="Repeat your password" autocomplete="new-password"/>
-              <span onclick="togglePw('pwc', this)" style="position:absolute;right:.9rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--n300);">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              </span>
-            </div>
-          </div>
-
-          <button type="submit" class="btn-auth" id="submit-btn">Create Free Account</button>
-
-        </div><!-- /form-body -->
-      </form>
-
-      <div class="auth-divider"><span>Already have an account?</span></div>
-      <div class="auth-switch"><a href="login.php">Sign in to غصن</a></div>
-
+  <div class="reports">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3>My Activities</h3>
+      <p class="btn"><a href="search.php">+ Join Activity</a></p>
     </div>
-  </div>
 
+    <?php if (empty($activities)): ?>
+      <div class="empty-box">No activities found.</div>
+    <?php else: ?>
+      <?php foreach ($activities as $activity): ?>
+        <div class="report">
+          <img src="<?php echo htmlspecialchars($activity['photo'] ?: 'images/report1.jpg'); ?>" alt="Activity Image"
+               style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+
+          <div style="display:flex; justify-content:space-between;">
+            <h4><?php echo htmlspecialchars($activity['Title'] ?: 'Activity #' . $activity['Activity_ID']); ?></h4>
+          </div>
+
+          <div class="meta">
+            Linked to Report #<?php echo htmlspecialchars($activity['Report_ID'] ?? 'N/A'); ?>
+          </div>
+
+          <p>
+            <?php echo htmlspecialchars($activity['Description'] ?: 'No description available.'); ?>
+          </p>
+
+          <div class="tags">
+            <?php if (!empty($activity['Severity_Level'])): ?>
+              <span class="tag <?php echo severityClass($activity['Severity_Level']); ?>">
+                Severity: <?php echo htmlspecialchars($activity['Severity_Level']); ?>/5
+              </span>
+            <?php endif; ?>
+
+            <span 
+              id="status-<?php echo htmlspecialchars($activity['Activity_ID']); ?>"
+              class="tag <?php echo activityStatusClass($activity['Status']); ?>"
+            >
+              <?php echo htmlspecialchars($activity['Status']); ?>
+            </span>
+
+            <button 
+              type="button"
+              class="status-btn"
+              onclick="openStatusPopup('<?php echo htmlspecialchars($activity['Activity_ID']); ?>', '<?php echo htmlspecialchars($activity['Status']); ?>')"
+            >
+              ✏️ Update Status
+            </button>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
 </div>
 
-<script src="shared.js"></script>
+<div id="statusPopup" class="popup-overlay">
+  <div class="popup-box">
+    <div class="popup-header">
+      <h3>Update Status</h3>
+      <span class="close-btn" onclick="closePopup()">×</span>
+    </div>
+
+    <select id="statusSelect">
+  <option value="Pending">Pending</option>
+  <option value="In Progress">In Progress</option>
+  <option value="Completed">Completed</option>
+</select>
+
+    <button class="save-btn" onclick="saveStatus()">Save Changes</button>
+  </div>
+</div>
+
 <script>
-// Auth canvas
-(function(){
-  const canvas=document.getElementById('auth-canvas');
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  let fr=0;
-  function resize(){ canvas.width=canvas.parentElement.offsetWidth||600; canvas.height=canvas.parentElement.offsetHeight||900; }
-  resize(); window.addEventListener('resize',resize);
-  const stars=Array.from({length:65},()=>({x:Math.random(),y:Math.random()*.7,r:Math.random()*1.5+.3,op:Math.random()*.5+.15,tw:Math.random()*Math.PI*2}));
-  const leaves=Array.from({length:16},()=>({x:Math.random()*600,y:Math.random()*900,size:Math.random()*14+5,vx:(Math.random()-.5)*.22,vy:-Math.random()*.38-.08,rot:Math.random()*Math.PI*2,vr:(Math.random()-.5)*.011,op:Math.random()*.2+.06,hue:108+Math.random()*36}));
-  function animate(){
-    fr++;
-    const w=canvas.width,h=canvas.height;
-    ctx.clearRect(0,0,w,h);
-    stars.forEach(s=>{ const tw=s.op+Math.sin(fr*.024+s.tw)*.1; ctx.fillStyle=`rgba(180,235,150,${tw})`; ctx.beginPath();ctx.arc(s.x*w,s.y*h,s.r,0,Math.PI*2);ctx.fill(); });
-    const mx=w*.78,my=h*.18,mr=h*.055;
-    const mg=ctx.createRadialGradient(mx,my,0,mx,my,mr*2.6);
-    mg.addColorStop(0,'rgba(210,250,185,.26)');mg.addColorStop(1,'rgba(210,250,185,0)');
-    ctx.fillStyle=mg;ctx.beginPath();ctx.arc(mx,my,mr*2.6,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(224,252,198,.86)';ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(10,26,10,.95)';ctx.beginPath();ctx.arc(mx+mr*.38,my-mr*.08,mr*.86,0,Math.PI*2);ctx.fill();
-    leaves.forEach(l=>{
-      ctx.save();ctx.translate(l.x,l.y);ctx.rotate(l.rot);
-      ctx.globalAlpha=l.op;ctx.fillStyle=`hsl(${l.hue},52%,42%)`;
-      ctx.beginPath();ctx.ellipse(0,0,l.size,l.size*.5,0,0,Math.PI*2);ctx.fill();
-      ctx.restore();
-      l.x+=l.vx+Math.sin(fr*.015+l.hue)*.16;l.y+=l.vy;l.rot+=l.vr;
-      if(l.y<-20){l.y=canvas.height+20;l.x=Math.random()*canvas.width;}
-    });
-    requestAnimationFrame(animate);
+let currentActivityId = null;
+
+function openStatusPopup(activityId, currentStatus) {
+  currentActivityId = activityId;
+  document.getElementById("statusSelect").value = currentStatus;
+  document.getElementById("statusPopup").style.display = "flex";
+}
+
+function closePopup() {
+  document.getElementById("statusPopup").style.display = "none";
+}
+
+function saveStatus() {
+  const status = document.getElementById("statusSelect").value;
+
+  fetch("update_activity_status.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "activity_id=" + encodeURIComponent(currentActivityId) +
+          "&status=" + encodeURIComponent(status)
+  })
+  .then(res => res.text())
+  .then(data => {
+    if (data.trim() === "Updated") {
+      const statusTag = document.getElementById("status-" + currentActivityId);
+
+      statusTag.textContent = status;
+      statusTag.classList.remove("planned", "progress", "completed");
+
+if (status === "Completed") {
+  statusTag.classList.add("completed");
+} else if (status === "In Progress") {
+  statusTag.classList.add("progress");
+} else {
+  statusTag.classList.add("planned");
+}
+      closePopup();
+    } else {
+      alert("Error: " + data);
+    }
+  });
+}
+
+document.getElementById("statusPopup").addEventListener("click", function(e) {
+  if (e.target === this) {
+    closePopup();
   }
-  animate();
-})();
-
-function togglePw(id, icon) {
-  const input = document.getElementById(id);
-  const isText = input.type === 'text';
-  input.type = isText ? 'password' : 'text';
-  icon.style.opacity = isText ? '1' : '0.4';
-}
-
-const PW_LEVELS = ['','Weak','Fair','Good','Strong'];
-const PW_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e'];
-function checkPwStrength(v){
-  let s=0;
-  if(v.length>=8)s++; if(/[A-Z]/.test(v))s++; if(/[0-9]/.test(v))s++; if(/[^A-Za-z0-9]/.test(v))s++;
-  const bar=document.getElementById('pw-bar'), txt=document.getElementById('pw-text');
-  if(bar){ bar.style.width=['0%','28%','54%','78%','100%'][s]; bar.style.background=PW_COLORS[s]||''; }
-  if(txt){ txt.textContent=PW_LEVELS[s]||''; txt.style.color=PW_COLORS[s]||''; }
-}
-
-// Role selection
-let selectedRole = '<?= htmlspecialchars($_POST['role'] ?? '') ?>';
-(function(){ if(selectedRole) activateRole(selectedRole); })();
-
-function activateRole(role) {
-  document.getElementById('role-resident').classList.toggle('active', role === 'resident');
-  document.getElementById('role-volunteer').classList.toggle('active', role === 'volunteer');
-  document.getElementById('form-body').classList.remove('locked');
-  document.getElementById('role-warning').classList.remove('show');
-}
-
-function selectRole(role) {
-  selectedRole = role;
-  document.getElementById('role-input').value = role;
-  activateRole(role);
-}
-
-// Client-side validation before submit
-document.getElementById('signup-form').addEventListener('submit', function(e) {
-  const err = document.getElementById('signup-error');
-  const show = (msg) => { err.textContent = msg; err.classList.add('show'); e.preventDefault(); };
-
-  err.classList.remove('show');
-
-  if (!selectedRole) {
-    e.preventDefault();
-    document.getElementById('role-warning').classList.add('show');
-    document.getElementById('role-selector').scrollIntoView({behavior:'smooth', block:'center'});
-    return;
-  }
-
-  const fn  = document.getElementById('fn').value.trim();
-  const ln  = document.getElementById('ln').value.trim();
-  const em  = document.getElementById('email').value.trim();
-  const pw  = document.getElementById('pw').value;
-  const pwc = document.getElementById('pwc').value;
-
-  if (!fn || !ln || !em || !pw || !pwc) { show('Please fill in all required fields.'); return; }
-  if (pw.length < 8) { show('Password must be at least 8 characters.'); return; }
-  if (pw !== pwc) { show('Passwords do not match.'); return; }
-
-  document.getElementById('submit-btn').disabled = true;
-  document.getElementById('submit-btn').textContent = 'Creating account…';
 });
 </script>
+
+<script src="shared.js"></script>
 </body>
 </html>
