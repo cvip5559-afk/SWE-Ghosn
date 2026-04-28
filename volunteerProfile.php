@@ -7,19 +7,10 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
-// ── DEBUG: شيل هذا الكود بعد ما تحل المشكلة ──
-echo '<div style="background:#111;color:#0f0;padding:10px;font-size:13px;position:fixed;top:0;left:0;z-index:9999;">';
-echo "role = " . var_export($_SESSION['role'] ?? 'NOT SET', true) . " | ";
-echo "user_id = " . var_export($_SESSION['user_id'] ?? 'NOT SET', true);
-echo '</div>';
-// ── نهاية DEBUG ──
-
-// مؤقتاً: شيلنا شرط الـ role عشان نشوف الصفحة تفتح
-// if (($_SESSION['role'] ?? '') !== 'volunteer') {
-//     header('Location: ghusn_home1.php');
-//     exit;
-// }
-
+if (($_SESSION['role'] ?? '') !== 'volunteer') {
+    header('Location: ghusn_home1.php');
+    exit;
+}
 $userId   = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'Volunteer';
 $email    = $_SESSION['email'] ?? '';
@@ -31,25 +22,47 @@ $profile = [
     'DateOfJoining' => '',
 ];
 
-if (!$conn || $conn->connect_error) {
-    die('<div style="color:red;padding:20px;">DB Error: ' . ($conn->connect_error ?? 'null') . '</div>');
-}
-
-$stmt = $conn->prepare("SELECT u.User_name, u.email, u.phone, v.DateOfJoining FROM user u JOIN volunteer v ON v.Volunteer_ID = u.User_ID WHERE u.User_ID = ? LIMIT 1");
-if (!$stmt) { die('<div style="color:red;padding:20px;">Query1 Error: ' . $conn->error . '</div>'); }
+$stmt = $conn->prepare("
+    SELECT u.User_name, u.email, u.phone, v.DateOfJoining
+    FROM user u
+    JOIN volunteer v ON v.Volunteer_ID = u.User_ID
+    WHERE u.User_ID = ?
+    LIMIT 1
+");
 $stmt->bind_param('s', $userId);
 $stmt->execute();
 $result = $stmt->get_result();
-if ($result && $result->num_rows > 0) { $profile = $result->fetch_assoc(); }
+
+if ($result && $result->num_rows > 0) {
+    $profile = $result->fetch_assoc();
+}
 $stmt->close();
 
 $activities = [];
-$stmt2 = $conn->prepare("SELECT a.Activity_ID, a.Status, a.Report_ID, r.Title, r.Description, r.Severity_Level, r.photo FROM activity a LEFT JOIN report r ON r.ReportID = a.Report_ID WHERE a.Volunteer_ID = ? ORDER BY a.Activity_ID DESC");
-if (!$stmt2) { die('<div style="color:red;padding:20px;">Query2 Error: ' . $conn->error . '</div>'); }
+
+$stmt2 = $conn->prepare("
+    SELECT 
+        a.Activity_ID,
+        a.Status,
+        a.Report_ID,
+        r.Title,
+        r.Description,
+        r.Severity_Level,
+        r.photo
+    FROM activity a
+    LEFT JOIN report r ON r.ReportID = a.Report_ID
+    WHERE a.Volunteer_ID = ?
+    ORDER BY a.Activity_ID DESC
+");
 $stmt2->bind_param('s', $userId);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
-if ($result2) { while ($row = $result2->fetch_assoc()) { $activities[] = $row; } }
+
+if ($result2) {
+    while ($row = $result2->fetch_assoc()) {
+        $activities[] = $row;
+    }
+}
 $stmt2->close();
 
 $activitiesCount = count($activities);
@@ -516,10 +529,6 @@ document.getElementById("statusPopup").addEventListener("click", function(e) {
 });
 </script>
 
-<script>
-  window.GHOSN_ROLE    = "volunteer";
-  window.GHOSN_PHP_NAV = true;
-</script>
 <script src="shared.js"></script>
 </body>
 </html>
