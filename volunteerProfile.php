@@ -31,47 +31,25 @@ $profile = [
     'DateOfJoining' => '',
 ];
 
-$stmt = $conn->prepare("
-    SELECT u.User_name, u.email, u.phone, v.DateOfJoining
-    FROM user u
-    JOIN volunteer v ON v.Volunteer_ID = u.User_ID
-    WHERE u.User_ID = ?
-    LIMIT 1
-");
+if (!$conn || $conn->connect_error) {
+    die('<div style="color:red;padding:20px;">DB Error: ' . ($conn->connect_error ?? 'null') . '</div>');
+}
+
+$stmt = $conn->prepare("SELECT u.User_name, u.email, u.phone, v.DateOfJoining FROM user u JOIN volunteer v ON v.Volunteer_ID = u.User_ID WHERE u.User_ID = ? LIMIT 1");
+if (!$stmt) { die('<div style="color:red;padding:20px;">Query1 Error: ' . $conn->error . '</div>'); }
 $stmt->bind_param('s', $userId);
 $stmt->execute();
 $result = $stmt->get_result();
-
-if ($result && $result->num_rows > 0) {
-    $profile = $result->fetch_assoc();
-}
+if ($result && $result->num_rows > 0) { $profile = $result->fetch_assoc(); }
 $stmt->close();
 
 $activities = [];
-
-$stmt2 = $conn->prepare("
-    SELECT 
-        a.Activity_ID,
-        a.Status,
-        a.Report_ID,
-        r.Title,
-        r.Description,
-        r.Severity_Level,
-        r.photo
-    FROM activity a
-    LEFT JOIN report r ON r.ReportID = a.Report_ID
-    WHERE a.Volunteer_ID = ?
-    ORDER BY a.Activity_ID DESC
-");
+$stmt2 = $conn->prepare("SELECT a.Activity_ID, a.Status, a.Report_ID, r.Title, r.Description, r.Severity_Level, r.photo FROM activity a LEFT JOIN report r ON r.ReportID = a.Report_ID WHERE a.Volunteer_ID = ? ORDER BY a.Activity_ID DESC");
+if (!$stmt2) { die('<div style="color:red;padding:20px;">Query2 Error: ' . $conn->error . '</div>'); }
 $stmt2->bind_param('s', $userId);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
-
-if ($result2) {
-    while ($row = $result2->fetch_assoc()) {
-        $activities[] = $row;
-    }
-}
+if ($result2) { while ($row = $result2->fetch_assoc()) { $activities[] = $row; } }
 $stmt2->close();
 
 $activitiesCount = count($activities);
