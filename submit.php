@@ -104,7 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':resID'    => $residentID,
                     ':locID'    => $locationID,
                 ]);
+                /* create activity automatically */
 
+$activityID = 'ACT-' . uniqid();
+
+$pdo->prepare("
+    INSERT INTO activity
+    (Activity_ID, ActivityDate, Status, Report_ID)
+    VALUES
+    (:aid, CURDATE(), 'Pending', :rid)
+")->execute([
+    ':aid' => $activityID,
+    ':rid' => $reportID
+]);
                 $pdo->commit();
                 $success = 'Your report has been submitted successfully! ✅';
 

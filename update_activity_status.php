@@ -22,20 +22,24 @@ if (!in_array($status, ['Pending', 'In Progress', 'Completed'])) {
     exit("Invalid status");
 }
 
+/* تأكد أن هذا الفولنتير assigned على هذا النشاط + جيب report id */
 $stmt = $conn->prepare("
-    SELECT Report_ID
-    FROM activity
-    WHERE Activity_ID = ? AND Volunteer_ID = ?
+    SELECT a.Report_ID
+    FROM assign s
+    JOIN activity a ON a.Activity_ID = s.Activity_ID
+    WHERE s.Activity_ID = ?
+      AND s.Volunteer_ID = ?
     LIMIT 1
 ");
+
 $stmt->bind_param("ss", $activityId, $volunteerId);
 $stmt->execute();
 $result = $stmt->get_result();
-$activity = $result ? $result->fetch_assoc() : null;
+$activity = $result->fetch_assoc();
 $stmt->close();
 
 if (!$activity) {
-    exit("Activity not found");
+    exit("Activity not found or not assigned to you");
 }
 
 $reportId = $activity['Report_ID'];
@@ -43,15 +47,18 @@ $reportId = $activity['Report_ID'];
 $conn->begin_transaction();
 
 try {
+
+    /* تحديث activity بدون Volunteer_ID */
     $stmt2 = $conn->prepare("
         UPDATE activity
         SET Status = ?
-        WHERE Activity_ID = ? AND Volunteer_ID = ?
+        WHERE Activity_ID = ?
     ");
-    $stmt2->bind_param("sss", $status, $activityId, $volunteerId);
+    $stmt2->bind_param("ss", $status, $activityId);
     $stmt2->execute();
     $stmt2->close();
 
+    /* تحديث report */
     $stmt3 = $conn->prepare("
         UPDATE report
         SET Status = ?
@@ -66,6 +73,6 @@ try {
 
 } catch (Exception $e) {
     $conn->rollback();
-    echo "Error";
+    echo "Error: " . $e->getMessage();
 }
 ?>

@@ -49,9 +49,10 @@ $stmt2 = $conn->prepare("
         r.Description,
         r.Severity_Level,
         r.photo
-    FROM activity a
-    LEFT JOIN report r ON r.ReportID = a.Report_ID
-    WHERE a.Volunteer_ID = ?
+    FROM assign s
+    JOIN activity a ON a.Activity_ID = s.Activity_ID
+    JOIN report r ON r.ReportID = a.Report_ID
+    WHERE s.Volunteer_ID = ?
     ORDER BY a.Activity_ID DESC
 ");
 $stmt2->bind_param('s', $userId);

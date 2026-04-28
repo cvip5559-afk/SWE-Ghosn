@@ -1,121 +1,91 @@
-```php id="r8k2va"
 <?php
-
 session_start();
 require_once 'includes/connection.php';
 
 function showAlert($message) {
-
-    echo "
-
-    <script>
-
-    alert('$message');
-
-    window.history.back();
-
-    </script>
-
-    ";
-
+    echo "<script>
+        alert('$message');
+        window.history.back();
+    </script>";
     exit;
 }
 
-if (!isset($_SESSION['user_id'])) {
+if (empty($_SESSION['user_id'])) {
     showAlert('Please login first');
 }
 
 $userId = $_SESSION['user_id'];
 $reportId = $_POST['report_id'] ?? '';
 
-if (empty($reportId)) {
+if ($reportId === '') {
     showAlert('Missing report ID');
 }
 
-/* check if user is volunteer */
-
-$checkVolunteer = mysqli_query($conn, "
-
-SELECT *
-
-FROM volunteer
-
-WHERE Volunteer_ID = '$userId'
-
+/* check volunteer */
+$stmt = $conn->prepare("
+    SELECT Volunteer_ID
+    FROM volunteer
+    WHERE Volunteer_ID = ?
 ");
+$stmt->bind_param("s", $userId);
+$stmt->execute();
+$volunteerResult = $stmt->get_result();
 
-if (mysqli_num_rows($checkVolunteer) == 0) {
-
+if ($volunteerResult->num_rows === 0) {
     showAlert('Only volunteers can volunteer');
+}
+$stmt->close();
 
+/* get existing activity for this report */
+$stmt = $conn->prepare("
+    SELECT Activity_ID
+    FROM activity
+    WHERE Report_ID = ?
+");
+$stmt->bind_param("s", $reportId);
+$stmt->execute();
+$activityResult = $stmt->get_result();
+$activity = $activityResult->fetch_assoc();
+$stmt->close();
+
+if (!$activity) {
+    showAlert('No activity exists for this report yet');
 }
 
-/* prevent duplicate volunteer */
+$activityId = $activity['Activity_ID'];
 
-$checkExisting = mysqli_query($conn, "
-
-SELECT *
-
-FROM activity
-
-WHERE Volunteer_ID = '$userId'
-
-AND Report_ID = '$reportId'
-
+/* check if volunteer already assigned */
+$stmt = $conn->prepare("
+    SELECT *
+    FROM assign
+    WHERE Volunteer_ID = ?
+    AND Activity_ID = ?
 ");
+$stmt->bind_param("ss", $userId, $activityId);
+$stmt->execute();
+$assignResult = $stmt->get_result();
 
-if (mysqli_num_rows($checkExisting) > 0) {
+if ($assignResult->num_rows > 0) {
+    showAlert('You already joined this activity');
+}
+$stmt->close();
 
-    showAlert('You already volunteered for this report');
+/* insert assign only */
+$stmt = $conn->prepare("
+    INSERT INTO assign
+    (Volunteer_ID, Activity_ID, ParticipationStatus)
+    VALUES (?, ?, 'Assigned')
+");
+$stmt->bind_param("ss", $userId, $activityId);
 
+if ($stmt->execute()) {
+    echo "<script>
+        alert('You joined the activity successfully');
+        window.location.href='volunteerProfile.php';
+    </script>";
+} else {
+    showAlert('Error joining activity');
 }
 
-/* create activity */
-
-$activityId = uniqid("ACT_");
-
-$date = date("Y-m-d");
-
-mysqli_query($conn, "
-
-INSERT INTO activity
-
-(Activity_ID, Volunteer_ID, Report_ID, Status, ActivityDate)
-
-VALUES
-
-('$activityId', '$userId', '$reportId', 'Pending', '$date')
-
-");
-
-/* insert into assign */
-
-mysqli_query($conn, "
-
-INSERT INTO assign
-
-(Activity_ID, Volunteer_ID, ParticipationStatus)
-
-VALUES
-
-('$activityId', '$userId', 'Assigned')
-
-");
-
-echo "
-
-<script>
-
-alert('Volunteer request submitted successfully');
-
-window.location.href='volunteerProfile.php';
-
-</script>
-
-";
-
-exit;
-
+$stmt->close();
 ?>
-```
-
