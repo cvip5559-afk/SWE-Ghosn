@@ -7,11 +7,16 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
-if (($_SESSION['role'] ?? '') !== 'volunteer') {
-    header('Location: ghusn_home1.php');
+// ── DEBUG مؤقت: اشيل هذا الكود بعد ما تحل المشكلة ──
+if (isset($_GET['debug'])) {
+    echo '<pre style="background:#111;color:#0f0;padding:20px;font-size:14px;">';
+    echo "SESSION role = " . var_export($_SESSION['role'] ?? 'NOT SET', true) . "\n";
+    echo "SESSION user_id = " . var_export($_SESSION['user_id'] ?? 'NOT SET', true) . "\n";
+    echo "SESSION user_name = " . var_export($_SESSION['user_name'] ?? 'NOT SET', true) . "\n";
+    echo '</pre>';
     exit;
 }
-
+// ── نهاية DEBUG ──
 $userId   = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'Volunteer';
 $email    = $_SESSION['email'] ?? '';
