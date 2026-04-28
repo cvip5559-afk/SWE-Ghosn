@@ -516,6 +516,10 @@ document.getElementById("statusPopup").addEventListener("click", function(e) {
 });
 </script>
 
+<script>
+  window.GHOSN_ROLE    = "volunteer";
+  window.GHOSN_PHP_NAV = true;
+</script>
 <script src="shared.js"></script>
 </body>
 </html>
