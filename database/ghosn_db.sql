@@ -32,7 +32,6 @@ CREATE TABLE `activity` (
   `ActivityDate` date NOT NULL,
   `Status` ENUM('Pending','In Progress','Completed') NOT NULL,
   `Report_ID` varchar(255) NOT NULL,
-`Volunteer_ID` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
