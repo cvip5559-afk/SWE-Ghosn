@@ -7,16 +7,19 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
-// ── DEBUG مؤقت: اشيل هذا الكود بعد ما تحل المشكلة ──
-if (isset($_GET['debug'])) {
-    echo '<pre style="background:#111;color:#0f0;padding:20px;font-size:14px;">';
-    echo "SESSION role = " . var_export($_SESSION['role'] ?? 'NOT SET', true) . "\n";
-    echo "SESSION user_id = " . var_export($_SESSION['user_id'] ?? 'NOT SET', true) . "\n";
-    echo "SESSION user_name = " . var_export($_SESSION['user_name'] ?? 'NOT SET', true) . "\n";
-    echo '</pre>';
-    exit;
-}
+// ── DEBUG: شيل هذا الكود بعد ما تحل المشكلة ──
+echo '<div style="background:#111;color:#0f0;padding:10px;font-size:13px;position:fixed;top:0;left:0;z-index:9999;">';
+echo "role = " . var_export($_SESSION['role'] ?? 'NOT SET', true) . " | ";
+echo "user_id = " . var_export($_SESSION['user_id'] ?? 'NOT SET', true);
+echo '</div>';
 // ── نهاية DEBUG ──
+
+// مؤقتاً: شيلنا شرط الـ role عشان نشوف الصفحة تفتح
+// if (($_SESSION['role'] ?? '') !== 'volunteer') {
+//     header('Location: ghusn_home1.php');
+//     exit;
+// }
+
 $userId   = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'Volunteer';
 $email    = $_SESSION['email'] ?? '';
