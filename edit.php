@@ -20,12 +20,34 @@ if (!isset($_GET['id'])) {
 
 $reportID = $_GET['id'];
 
+$stmt = $conn->prepare("
+    SELECT report.*, location.*
+    FROM report
+    JOIN location ON report.LocationID = location.LocationID
+    WHERE report.ReportID = ?
+");
+
+$stmt->bind_param("s", $reportID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows == 0) {
+    die("Report not found.");
+}
+
+$report = $result->fetch_assoc();
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $title = $_POST['title'];
     $description = $_POST['description'];
     $severity = $_POST['severity'];
+    $district = $_POST['district'];
+    $street = $_POST['street'];
+    $landmark = $_POST['landmark'];
+    $postalCode = $_POST['postalCode'];
     $oldImage = $_POST['oldImage'];
+    $locationID = $_POST['locationID'];
 
     $imageName = $oldImage;
 
@@ -40,32 +62,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         move_uploaded_file($_FILES['image']['tmp_name'], $imageName);
     }
 
-    $stmt = $conn->prepare("
-        UPDATE report 
+    $updateReport = $conn->prepare("
+        UPDATE report
         SET Title = ?, Description = ?, Severity_Level = ?, photo = ?
         WHERE ReportID = ?
     ");
 
-    $stmt->bind_param("ssiss", $title, $description, $severity, $imageName, $reportID);
+    $updateReport->bind_param("ssiss", $title, $description, $severity, $imageName, $reportID);
 
-    if ($stmt->execute()) {
-        header("Location: residentProfile.php?updated=1");
-        exit();
-    } else {
-        echo "Error updating report.";
+    if (!$updateReport->execute()) {
+        die("Error updating report: " . $updateReport->error);
     }
+
+    $updateLocation = $conn->prepare("
+        UPDATE location
+        SET DistrictName = ?, StreetName = ?, Landmark = ?, postalCode = ?
+        WHERE LocationID = ?
+    ");
+
+    $updateLocation->bind_param("sssss", $district, $street, $landmark, $postalCode, $locationID);
+
+    if (!$updateLocation->execute()) {
+        die("Error updating location: " . $updateLocation->error);
+    }
+
+    header("Location: residentProfile.php?updated=1");
+    exit();
 }
-
-$stmt = $conn->prepare("SELECT * FROM report WHERE ReportID = ?");
-$stmt->bind_param("s", $reportID);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows == 0) {
-    die("Report not found.");
-}
-
-$report = $result->fetch_assoc();
 ?>
 
 <!DOCTYPE html>
@@ -84,7 +107,7 @@ body {
 .submit-wrap {
     max-width: 800px;
     margin: auto;
-    padding: 7rem 2rem 4rem;
+    padding: 9rem 2rem 4rem;
 }
 
 .form-card {
@@ -98,6 +121,7 @@ body {
     text-align: center;
     font-size: 2.3rem;
     margin-bottom: 1.5rem;
+    color: #052b12;
 }
 
 .form-group {
@@ -115,6 +139,26 @@ input, textarea, select {
     padding: .8rem;
     border-radius: 10px;
     border: 1px solid #ddd;
+    box-sizing: border-box;
+}
+
+.location-box {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 15px;
+    background: #f8f8f8;
+}
+
+.location-title {
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 .submit-btn {
@@ -132,6 +176,22 @@ input, textarea, select {
     background: #1f5f1f;
 }
 
+.back-btn {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    background: #777;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.back-btn:hover {
+    background: #555;
+}
+
 #preview {
     width: 100%;
     max-height: 350px;
@@ -139,10 +199,46 @@ input, textarea, select {
     margin-top: 10px;
     border-radius: 10px;
 }
+
+@media (max-width: 700px) {
+    .location-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 </head>
 
 <body>
+
+<nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
+  <a href="ghusn_home1.php" class="nav-logo">
+    <img src="images/logoo.png" alt="Ghosn Logo" style="width:107px; height:107px; object-fit:contain; display:block;">
+  </a>
+
+  <ul class="nav-links">
+    <li>
+      <a href="ghusn_home1.php" id="nav-home">
+        Home
+      </a>
+    </li>
+    <li>
+      <a href="submit.php" id="nav-report">
+        Submit Report
+      </a>
+    </li>
+    <li>
+      <a href="residentProfile.php" id="nav-profile" class="active" style="color: #b7deb7;">
+        Profile
+      </a>
+    </li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-nav-signout" style="color: #b7deb7;" onclick="signOut()">
+      Sign Out
+    </button>
+  </div>
+</nav>
 
 <main class="submit-wrap">
     <div class="form-card">
@@ -151,18 +247,42 @@ input, textarea, select {
 
         <form method="POST" enctype="multipart/form-data">
 
+            <input type="hidden" name="locationID" value="<?php echo htmlspecialchars($report['LocationID']); ?>">
+
             <div class="form-group">
                 <label>Title</label>
-                <input 
-                    type="text" 
-                    name="title" 
-                    value="<?php echo htmlspecialchars($report['Title']); ?>" 
-                    required>
+                <input type="text" name="title" value="<?php echo htmlspecialchars($report['Title']); ?>" required>
             </div>
 
             <div class="form-group">
                 <label>Description</label>
                 <textarea name="description" rows="4" required><?php echo htmlspecialchars($report['Description']); ?></textarea>
+            </div>
+
+            <div class="location-box">
+                <p class="location-title">Location Details</p>
+
+                <div class="location-grid">
+                    <div class="form-group">
+                        <label>District Name</label>
+                        <input type="text" name="district" value="<?php echo htmlspecialchars($report['DistrictName'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Street Name</label>
+                        <input type="text" name="street" value="<?php echo htmlspecialchars($report['StreetName'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Landmark</label>
+                        <input type="text" name="landmark" value="<?php echo htmlspecialchars($report['Landmark'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Postal Code</label>
+                        <input type="text" name="postalCode" value="<?php echo htmlspecialchars($report['postalCode'] ?? ''); ?>" required>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -188,6 +308,7 @@ input, textarea, select {
             </div>
 
             <button type="submit" class="submit-btn">Save Changes</button>
+            <button type="button" class="back-btn" onclick="window.location.href='residentProfile.php'">Back</button>
 
         </form>
 
@@ -210,5 +331,6 @@ document.getElementById("imageInput").addEventListener("change", function(e) {
 });
 </script>
 
+<script src="shared.js"></script>
 </body>
 </html>

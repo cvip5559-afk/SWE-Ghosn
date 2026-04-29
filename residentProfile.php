@@ -48,7 +48,17 @@ $stmt->close();
 $reports = [];
 
 $stmt2 = $conn->prepare("
-    SELECT r.ReportID, r.Severity_Level, r.Status, r.Description, r.Title, l.DistrictName, r.photo
+    SELECT 
+        r.ReportID, 
+        r.Severity_Level, 
+        r.Status, 
+        r.Description, 
+        r.Title, 
+        r.photo,
+        l.DistrictName, 
+        l.StreetName, 
+        l.Landmark, 
+        l.postalCode
     FROM report r
     JOIN location l ON r.LocationID = l.LocationID
     WHERE r.resident_ID = ?
@@ -201,7 +211,37 @@ function statusClass($status) {
       font-size: 13px;
       color: gray;
       margin: 5px 0;
+      line-height: 1.7;
     }
+    
+    .location-boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.loc-box {
+    background: #f4f6f4;
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.loc-box small {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.loc-box p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2f5d2f;
+}
 
     .tags {
       display: flex;
@@ -365,9 +405,36 @@ $imagePath =  $imageName;
             </div>
           </div>
 
-          <div class="meta">
-            📍<?php echo htmlspecialchars($report['DistrictName'] ?: 'Unknown location'); ?>
-          </div>
+          <div class="meta location-boxes">
+    <div class="loc-box">
+       
+        <div>
+            <small>District</small>
+            <p><?php echo htmlspecialchars($report['DistrictName'] ?: 'Unknown'); ?></p>
+        </div>
+    </div>
+
+    <div class="loc-box">
+        <div>
+            <small>Street</small>
+            <p><?php echo htmlspecialchars($report['StreetName'] ?: 'Unknown'); ?></p>
+        </div>
+    </div>
+
+    <div class="loc-box">
+        <div>
+            <small>Landmark</small>
+            <p><?php echo htmlspecialchars($report['Landmark'] ?: 'Not added'); ?></p>
+        </div>
+    </div>
+
+    <div class="loc-box">
+        <div>
+            <small>Postal Code</small>
+            <p><?php echo htmlspecialchars($report['postalCode'] ?: 'Unknown'); ?></p>
+        </div>
+    </div>
+</div>
 
           <div class="tags">
             <span class="tag <?php echo severityClass($report['Severity_Level']); ?>">
