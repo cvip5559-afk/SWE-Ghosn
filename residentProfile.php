@@ -357,7 +357,7 @@ function statusClass($status) {
           <div class="role">Resident</div>
         </div>
         <div class="info">
-          <p>📍Location: <?php echo htmlspecialchars($profile['ResidentNeighbourhood'] ?: 'Not added'); ?></p>
+         
           <p>📧 Email: <?php echo htmlspecialchars($profile['email'] ?? ''); ?></p>
            </div>
       </div>

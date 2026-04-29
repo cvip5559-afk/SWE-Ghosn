@@ -392,7 +392,6 @@ function formatJoinDate($date) {
         </div>
         <div class="info">
           <p>📧 Email: <?php echo htmlspecialchars($profile['email'] ?? ''); ?></p>
-          <p>📞 Phone: <?php echo htmlspecialchars($profile['phone'] ?: 'Not added'); ?></p>
           <p>📅 Member since: <?php echo htmlspecialchars(formatJoinDate($profile['DateOfJoining'] ?? '')); ?></p>
         </div>
       </div>
