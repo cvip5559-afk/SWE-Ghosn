@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password  = $_POST['password']        ?? '';
     $confirm   = $_POST['confirm_password'] ?? '';
     $role      = strtolower(trim($_POST['role'] ?? ''));
+    $district = trim($_POST['district'] ?? '');
 
     // ── Validation ────────────────────────────
     if (!$firstName || !$lastName || !$email || !$password || !$confirm || !$role) {
@@ -61,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // 2. Insert into role table
             if ($role === 'resident') {
-                $neighbourhood = '';
+                $neighbourhood = $district;
                 $stmt2 = $conn->prepare('INSERT INTO resident (resident_ID, ResidentNeighbourhood) VALUES (?, ?)');
                 $stmt2->bind_param('ss', $userId, $neighbourhood);
             } else {
@@ -400,7 +401,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"/>
             </div>
           </div>
-
+         <div class="fg" id="district-field" style="display:none;">
+  <label for="district">District</label>
+  <div class="input-wrap">
+    <input type="text" id="district" name="district" placeholder="Enter your district">
+  </div>
+</div>
           <div class="fg">
             <label for="pw">Password</label>
             <div class="input-wrap">
@@ -506,6 +512,14 @@ function selectRole(role) {
   selectedRole = role;
   document.getElementById('role-input').value = role;
   activateRole(role);
+
+  const districtField = document.getElementById('district-field');
+
+  if (role === 'resident') {
+    districtField.style.display = 'block';
+  } else {
+    districtField.style.display = 'none';
+  }
 }
 
 // Client-side validation before submit

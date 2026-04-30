@@ -359,7 +359,9 @@ function statusClass($status) {
         <div class="info">
          
           <p>📧 Email: <?php echo htmlspecialchars($profile['email'] ?? ''); ?></p>
-           </div>
+          <p>📍 District: <?php echo !empty($profile['ResidentNeighbourhood']) 
+    ? htmlspecialchars($profile['ResidentNeighbourhood']) 
+    : 'Unknown'; ?></p></div>
       </div>
     </div>
 
